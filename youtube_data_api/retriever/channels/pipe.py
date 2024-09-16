@@ -20,6 +20,4 @@ class ChannelsPipe:
     def run_pipe(self) -> list[dict] | None:
         """fetch response from API; if no item fetched, return None"""
         response = self._get_response()
-        if not response.get("items"):
-            return None
-        return [response]
+        return response.get("items", None)

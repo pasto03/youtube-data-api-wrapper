@@ -28,8 +28,9 @@ class ChannelsRetriever:
             )
             pipe = ChannelsPipe(params, self.channel_fn)
             items = pipe.run_pipe()
+            # filter empty items
             if items:
-                raw_items.extend(items[0].get('items', []))
+                raw_items.extend(items)
             
             if progress_bar:
                 bar.update()
