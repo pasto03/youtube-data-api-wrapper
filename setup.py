@@ -1,3 +1,4 @@
+import pkg_resources
 from setuptools import setup, find_packages
 
 setup(
@@ -8,5 +9,10 @@ setup(
     author_email="chumaolaw@gmail.com",
     url="https://github.com/pasto03/youtube-data-api-wrapper.git",  # GitHub repo URL
     packages=find_packages(),  # Automatically find packages in your project
-    install_requires=[],  # External packages that are required for this package (optional)
+    install_requires=[
+        str(r)
+        for r in pkg_resources.parse_requirements(
+            open(os.path.join(os.path.dirname(__file__), "requirements.txt"))
+        )
+    ],
 )
