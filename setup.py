@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(
-    name="youtube-data-api-wrapper",  # Name of the module
+    name="youtube_data_api",  # Name of the module
     version="0.1",  # Version of your package
     description="a Python library that simplifies interactions with the YouTube Data API",
     author="Ben Law",
