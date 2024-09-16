@@ -1,1 +1,1 @@
-from retriever.channels import ChannelsRetriever
+from .channels import ChannelsRetriever
