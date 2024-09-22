@@ -1,1 +1,1 @@
-from youtube_data_api.retriever import ChannelsRetriever, PlaylistItemsRetriever
+from youtube_data_api.retriever import ChannelsRetriever, PlaylistItemsRetriever, PlaylistsRetriever
