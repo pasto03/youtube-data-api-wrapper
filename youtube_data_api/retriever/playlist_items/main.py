@@ -27,7 +27,7 @@ class PlaylistItemsRetriever:
                 PlaylistItemsCheckboxProps().convert(),
                 playlistId=playlistId
             )
-            print(params)
+            # print(params)
             pipe = PlaylistItemsPipe(params, self.playlist_items_fn)
             items = pipe.run_pipe()
 #             print(items)

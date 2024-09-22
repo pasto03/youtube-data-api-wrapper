@@ -12,7 +12,7 @@ class ChannelsRetriever:
         self.client = build_client(developerKey)
         self.channel_fn = self.client.channels()
     
-    def invoke(self, output_folder="backup/ChannelsWorker", filename=None, backup=True, progress_bar=True) -> list[dict]:
+    def invoke(self, output_folder="backup/ChannelsRetriever", filename=None, backup=True, progress_bar=True) -> list[dict]:
         channelId_chunks = split_list(self.channelId, chunk_size=50)
         raw_items = []
         
