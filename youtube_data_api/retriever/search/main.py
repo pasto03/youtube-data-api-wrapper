@@ -3,14 +3,17 @@ import time
 import json
 from tqdm import tqdm
 
-from ..base import BaseRetriever
+from ..base import BaseRetriever, PipeSettings
 from .pipe import SearchPipe
 from .params import SearchParams, SearchTypeCheckboxProps
 
 
 class SearchRetriever(BaseRetriever):
-    def __init__(self, keywords: list[str], developerKey: str, types: SearchTypeCheckboxProps = SearchTypeCheckboxProps()):
-        super().__init__(iterable=keywords, developerKey=developerKey)
+    def __init__(self, keywords: list[str], developerKey: str, 
+                 types: SearchTypeCheckboxProps = SearchTypeCheckboxProps(),
+                 settings: PipeSettings = PipeSettings()):
+        super().__init__(iterable=keywords, developerKey=developerKey, settings=settings)
+        # these parameters need to be overwritten
         self.types = types
         self.pipe_fn = self.client.search()
         self.pipe = SearchPipe
