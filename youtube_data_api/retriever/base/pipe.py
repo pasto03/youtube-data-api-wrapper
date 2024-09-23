@@ -7,6 +7,8 @@ from ...utils import flatten_chain
 
 
 RetrieveMethod: TypeAlias = Literal["head", "custom", "all"]
+width = 3   # text format
+
 
 class BasePipe:
     """
@@ -32,7 +34,7 @@ class BasePipe:
         response = request.execute()
         return response
     
-    def _get_all_response(self) -> list[dict]:
+    def _get_all_response(self, max_page=None) -> list[dict]:
         # print("inside _get_all_response")
         all_response = list()
         first_response = self._get_response()
@@ -40,16 +42,21 @@ class BasePipe:
         # print("nextPageToken: {}".format(nextPageToken))
         page_info = first_response['pageInfo']
         num_page = math.ceil(page_info['totalResults'] / page_info['resultsPerPage'])
+        # specifically for any pipe that needs early stop
+        if max_page:
+            num_page = min(max_page, num_page)
+            
         if not nextPageToken:
             return [first_response]
         
         all_response.append(first_response)
 #         print("num pages:", num_page)
-        bar = tqdm(total=num_page, desc="fetching response items...")
+        bar = tqdm(total=num_page)
         bar.update()   # first batch already obtained
-        count = 0
+        count = 1
+        bar.set_description("{:^{}s} / {:^{}s} pages fetched.".format(str(count), width, str(num_page), width))
         
-        while nextPageToken:
+        while nextPageToken and (count < num_page):
             response = self._get_response(pageToken=nextPageToken)
             all_response.append(response)
             nextPageToken = response.get("nextPageToken")
