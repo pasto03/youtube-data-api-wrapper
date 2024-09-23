@@ -1,8 +1,3 @@
-import os
-import time
-import json
-from tqdm import tqdm
-
 from ..base import BaseRetriever, PipeSettings
 from .pipe import SearchPipe
 from .params import SearchParams, SearchTypeCheckboxProps
