@@ -84,3 +84,26 @@ class BasePipe:
         
         elif self.retrieval == "all":
             return self._get_all_response()
+        
+
+class UniquePipe:
+    """
+    Receive params and return unique pair of resources
+    Only Retriever is supposed to implement this object
+    """
+    def __init__(self, params: BaseParams, pipe_fn=None):
+        self.params = params
+        self.pipe_fn = pipe_fn
+        
+    def _get_response(self, **kwargs) -> dict:
+        if not self.pipe_fn:
+            raise ValueError("Do not implement this object explicitly. Use Retriever instead.")
+            
+        request = self.pipe_fn.list(**self.params.to_dict())
+        response = request.execute()
+        return response
+    
+    def run_pipe(self) -> list[dict] | None:
+        """fetch response from API; if no item fetched, return None"""
+        response = self._get_response()
+        return response.get("items", None)
