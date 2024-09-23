@@ -3,13 +3,13 @@ from tqdm import tqdm
 import math
 
 
-from ..base import BasePipe
+from ..base import IterablePipe
 from .params import PlaylistsParams
 
 RetrieveMethod: TypeAlias = Literal["head", "custom", "all"]
     
     
-class PlaylistsPipe(BasePipe):
+class PlaylistsPipe(IterablePipe):
     """
     Receive one channelId and return playlist resources
     Only PlaylistsRetriever is supposed to implement this object

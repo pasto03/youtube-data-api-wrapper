@@ -5,22 +5,22 @@ from tqdm import tqdm
 
 from ...utils import split_list, build_client, dict_to_json, get_current_time
 from .settings import PipeSettings
-from .pipe import BasePipe
+from .pipe import IterablePipe
 from .params import BaseParams
 
 
-class BaseRetriever:
+class IterableRetriever:
     def __init__(self, iterable: list[str], developerKey: str, settings=PipeSettings()):
         self.iterable = iterable
         self.client = build_client(developerKey)
         self.pipe_fn = None
-        self.pipe = BasePipe
+        self.pipe = IterablePipe
         self.settings = settings
         
     def _create_params(self, i):
         return BaseParams(part='snippet')
         
-    def invoke(self, output_folder="backup/BaseRetriever", 
+    def invoke(self, output_folder="backup/IterableRetriever", 
                filename=None, backup=True, progress_bar=True) -> list[dict]:
         raw_items = []
         
@@ -64,13 +64,13 @@ class UniqueRetriever:
         self.chunks = split_list(self.iterable, chunk_size=50)   # split to chunks containing multiple ids
         self.client = build_client(developerKey)
         self.pipe_fn = None
-        self.pipe = BasePipe
+        self.pipe = IterablePipe
     
     def _create_params(self, chunk):
         chunk = ",".join(chunk)
         return BaseParams(part='snippet')
         
-    def invoke(self, output_folder="backup/BaseRetriever", 
+    def invoke(self, output_folder="backup/UniqueRetriever", 
                filename=None, backup=True, progress_bar=True) -> list[dict]:
         raw_items = []
         

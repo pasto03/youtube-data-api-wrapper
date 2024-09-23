@@ -2,14 +2,14 @@ from typing import TypeAlias, Literal
 from tqdm import tqdm
 import math
 
-from ..base.pipe import BasePipe
+from ..base.pipe import IterablePipe
 from .params import SearchParams
 
 
 RetrieveMethod: TypeAlias = Literal["head", "custom", "all"]
 
 
-class SearchPipe(BasePipe):
+class SearchPipe(IterablePipe):
     """
     Receive parameters and return search resources
     Only SearchRetriever is supposed to implement this object

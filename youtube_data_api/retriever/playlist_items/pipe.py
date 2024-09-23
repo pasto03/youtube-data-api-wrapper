@@ -2,13 +2,13 @@ from typing import TypeAlias, Literal
 from tqdm import tqdm
 import math
 
-from ..base import BasePipe
+from ..base import IterablePipe
 from .params import PlaylistItemsParams
 
 RetrieveMethod: TypeAlias = Literal["head", "custom", "all"]
     
     
-class PlaylistItemsPipe(BasePipe):
+class PlaylistItemsPipe(IterablePipe):
     """
     obtain playlistItems by a playlistId
     Only PlaylistItemsWorker is supposed to implement this object

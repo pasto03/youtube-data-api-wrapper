@@ -1,9 +1,9 @@
-from ..base import BaseRetriever, PipeSettings
+from ..base import IterableRetriever, PipeSettings
 from .pipe import SearchPipe
 from .params import SearchParams, SearchTypeCheckboxProps
 
 
-class SearchRetriever(BaseRetriever):
+class SearchRetriever(IterableRetriever):
     def __init__(self, keywords: list[str], developerKey: str, 
                  types: SearchTypeCheckboxProps = SearchTypeCheckboxProps(),
                  settings: PipeSettings = PipeSettings()):

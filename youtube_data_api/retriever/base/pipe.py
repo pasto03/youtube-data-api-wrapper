@@ -10,7 +10,7 @@ RetrieveMethod: TypeAlias = Literal["head", "custom", "all"]
 width = 3   # text format
 
 
-class BasePipe:
+class IterablePipe:
     """
     Receive params and return resources
     Only Retriever is supposed to implement this object

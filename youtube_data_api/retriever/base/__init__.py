@@ -1,4 +1,4 @@
-from .pipe import BasePipe, UniquePipe
+from .pipe import IterablePipe, UniquePipe
 from .params import BaseCheckboxProps, BaseParams
-from .main import BaseRetriever, UniqueRetriever
+from .main import IterableRetriever, UniqueRetriever
 from .settings import PipeSettings

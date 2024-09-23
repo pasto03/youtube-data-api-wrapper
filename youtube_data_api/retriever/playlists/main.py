@@ -1,9 +1,9 @@
-from ..base import BaseRetriever, PipeSettings
+from ..base import IterableRetriever, PipeSettings
 from .params import PlaylistsParams, PlaylistsCheckboxProps
 from .pipe import PlaylistsPipe
 
 
-class PlaylistsRetriever(BaseRetriever):
+class PlaylistsRetriever(IterableRetriever):
     def __init__(self, iterable: list[str], developerKey: str, settings: PipeSettings = PipeSettings()):
         super().__init__(iterable=iterable, developerKey=developerKey, settings=settings)
         # these parameters need to be overwritten
