@@ -3,7 +3,7 @@ from typing import Optional
 from copy import deepcopy
 
 
-from base import ItemThumbnail, BaseContainer
+from ..base import ItemThumbnail, BaseContainer
 
 
 @dataclass

@@ -2,7 +2,7 @@ from typing import TypeAlias, Literal
 from dataclasses import dataclass
 from copy import deepcopy
 
-from base import ItemThumbnail, BaseContainer
+from ..base import ItemThumbnail, BaseContainer
 
 ItemType: TypeAlias = Literal["video", "channel", "playlist"]
 
