@@ -1,9 +1,7 @@
 from typing import TypeAlias, Literal
-from tqdm import tqdm
 import math
 
 from .params import BaseParams
-from ...utils import flatten_chain
 
 
 RetrieveMethod: TypeAlias = Literal["head", "custom", "all"]
@@ -47,27 +45,27 @@ class IterablePipe:
             num_page = min(max_page, num_page)
             
         if not nextPageToken:
-            return [first_response]
+            return [first_response.get("items")]
         
-        all_response.append(first_response)
+        all_response.append(first_response.get("items"))
 #         print("num pages:", num_page)
-        bar = tqdm(total=num_page)
-        bar.update()   # first batch already obtained
+        # bar = tqdm(total=num_page)
+        # bar.update()   # first batch already obtained
         count = 1
-        bar.set_description("{:^{}s} / {:^{}s} pages fetched.".format(str(count), width, str(num_page), width))
+        # bar.set_description("{:^{}s} / {:^{}s} pages fetched.".format(str(count), width, str(num_page), width))
         
         while nextPageToken and (count < num_page):
             response = self._get_response(pageToken=nextPageToken)
-            all_response.append(response)
+            all_response.append(response.get("items"))
             nextPageToken = response.get("nextPageToken")
 #             print("Current count:", count)
 #             print("nextPageToken: {}".format(nextPageToken))
-            bar.update()
+            # bar.update()
             count += 1
         
-        all_response = flatten_chain([i["items"] for i in all_response])
-        bar.set_description("{} items obtained.".format(len(all_response)))
-        bar.close()
+        # all_response = flatten_chain([i["items"] for i in all_response])
+        # bar.set_description("{} items obtained.".format(len(all_response)))
+        # bar.close()
         
         return all_response
     

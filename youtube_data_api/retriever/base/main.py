@@ -9,7 +9,7 @@ from .pipe import IterablePipe
 from .params import BaseParams
 
 
-class IterableRetriever:
+class BaseRetriever:
     def __init__(self, iterable: list[str], developerKey: str, settings=PipeSettings()):
         self.iterable = iterable
         self.client = build_client(developerKey)
@@ -21,7 +21,7 @@ class IterableRetriever:
         return BaseParams(part='snippet')
         
     def invoke(self, output_folder="backup/IterableRetriever", 
-               filename=None, backup=True, progress_bar=True) -> list[dict]:
+               filename=None, backup=True) -> list[dict]:
         raw_items = []
         
         count = 0
@@ -39,10 +39,9 @@ class IterableRetriever:
             if items:
                 raw_items.extend(items)
             
-            if progress_bar:
-                bar.update()
-                count += 1
-                bar.set_description("{:^{}s} / {:^{}s} batch(s) retrieved.".format(str(count), width, str(total), width))
+            bar.update()
+            count += 1
+            bar.set_description("{:^{}s} / {:^{}s} batch(s) retrieved.".format(str(count), width, str(total), width))
                 
         bar.close()
         
@@ -71,7 +70,7 @@ class UniqueRetriever:
         return BaseParams(part='snippet')
         
     def invoke(self, output_folder="backup/UniqueRetriever", 
-               filename=None, backup=True, progress_bar=True) -> list[dict]:
+               filename=None, backup=True) -> list[dict]:
         raw_items = []
         
         count = 0
@@ -89,10 +88,9 @@ class UniqueRetriever:
             if items:
                 raw_items.extend(items)
             
-            if progress_bar:
-                bar.update()
-                count += 1
-                bar.set_description("{:^{}s} / {:^{}s} batch(s) retrieved.".format(str(count), width, str(total), width))
+            bar.update()
+            count += 1
+            bar.set_description("{:^{}s} / {:^{}s} batch(s) retrieved.".format(str(count), width, str(total), width))
                 
         bar.close()
         
