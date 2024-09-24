@@ -1,2 +1,3 @@
 from youtube_data_api.retriever import ChannelsRetriever, PlaylistItemsRetriever, PlaylistsRetriever, SearchRetriever, VideosRetriever
-from youtube_data_api.container import ChannelsContainer
+from youtube_data_api.container import ChannelsContainer, PlaylistItemsContainer, PlaylistsContainer, SearchContainer, VideosContainer
+from youtube_data_api.shipper import ChannelShipper
