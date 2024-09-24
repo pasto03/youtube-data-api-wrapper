@@ -5,7 +5,7 @@ from tqdm import tqdm
 
 from ...utils import split_list, build_client, dict_to_json, get_current_time
 from .settings import PipeSettings
-from .pipe import IterablePipe
+from .pipe import IterablePipe, UniquePipe
 from .params import BaseParams
 
 
@@ -63,7 +63,7 @@ class UniqueRetriever:
         self.chunks = split_list(self.iterable, chunk_size=50)   # split to chunks containing multiple ids
         self.client = build_client(developerKey)
         self.pipe_fn = None
-        self.pipe = IterablePipe
+        self.pipe = UniquePipe
     
     def _create_params(self, chunk):
         chunk = ",".join(chunk)

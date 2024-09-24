@@ -36,6 +36,7 @@ class IterablePipe:
         # print("inside _get_all_response")
         all_response = list()
         first_response = self._get_response()
+        
         nextPageToken = first_response.get("nextPageToken")
         # print("nextPageToken: {}".format(nextPageToken))
         page_info = first_response['pageInfo']
@@ -44,10 +45,12 @@ class IterablePipe:
         if max_page:
             num_page = min(max_page, num_page)
             
+        all_response.extend(first_response.get("items"))
         if not nextPageToken:
-            return [first_response.get("items")]
+            return all_response
         
-        all_response.append(first_response.get("items"))
+        # all_response.extend(first_response.get("items"))
+
 #         print("num pages:", num_page)
         # bar = tqdm(total=num_page)
         # bar.update()   # first batch already obtained
@@ -56,7 +59,7 @@ class IterablePipe:
         
         while nextPageToken and (count < num_page):
             response = self._get_response(pageToken=nextPageToken)
-            all_response.append(response.get("items"))
+            all_response.extend(response.get("items"))
             nextPageToken = response.get("nextPageToken")
 #             print("Current count:", count)
 #             print("nextPageToken: {}".format(nextPageToken))
