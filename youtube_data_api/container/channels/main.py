@@ -1,5 +1,6 @@
 from dataclasses import dataclass, asdict
 from typing import Optional
+from copy import deepcopy
 
 from ..base import ItemThumbnail, BaseContainer
     
@@ -25,6 +26,7 @@ class ChannelItem:
     channelId: str = None
     snippet: ChannelSnippet = None
     statistics: ChannelStatistics = None
+    metadata: dict = None
 
 
 class ChannelsContainer(BaseContainer):
@@ -39,6 +41,7 @@ class ChannelsContainer(BaseContainer):
         items = []
         for r in raw_items:
             item = ChannelItem()
+            item.metadata = deepcopy(r)
             item.channelId = r['id']
             
             raw_snippet = r.get("snippet")

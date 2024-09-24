@@ -1,4 +1,5 @@
 from dataclasses import dataclass, asdict
+from copy import deepcopy
 
 from ..base import ItemThumbnail, BaseContainer
 
@@ -29,6 +30,7 @@ class PlaylistItemsItem:
     playlistId: str = None
     snippet: PlaylistItemsSnippet = None
     contentDetails: PlaylistItemsContentDetails = None
+    metadata: dict = None
 
 
 @dataclass
@@ -43,26 +45,27 @@ class PlaylistItemsContainer(BaseContainer):
             return list()
         items = []
         for r in raw_items:
-            playlistitems_item = PlaylistItemsItem()
+            item = PlaylistItemsItem()
+            item.metadata = deepcopy(r)
 
             videoId = r['snippet']['resourceId']['videoId']
             
-            playlistitems_item.videoId = videoId
-            playlistitems_item.playlistId = r['snippet']['playlistId']
+            item.videoId = videoId
+            item.playlistId = r['snippet']['playlistId']
 
             # 1. snippet
             raw_snippet = r['snippet'] 
             snippet = self._extract_snippet(raw_snippet)
 
-            playlistitems_item.snippet = snippet
+            item.snippet = snippet
 
             # 2. contentDetails
             raw_contentDetails = r['contentDetails']
             contentDetails = self._extract_content_details(raw_contentDetails)
 
-            playlistitems_item.contentDetails = contentDetails
+            item.contentDetails = contentDetails
             
-            items.append(playlistitems_item)
+            items.append(item)
         
         return items
     
