@@ -9,7 +9,7 @@ from .pipe import IterablePipe
 from .params import BaseParams
 
 
-class BaseRetriever:
+class IterableRetriever:
     def __init__(self, iterable: list[str], developerKey: str, settings=PipeSettings()):
         self.iterable = iterable
         self.client = build_client(developerKey)
