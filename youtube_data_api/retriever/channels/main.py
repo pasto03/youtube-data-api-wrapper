@@ -14,5 +14,5 @@ class ChannelsRetriever(UniqueRetriever):
         return ChannelsParams(ChannelsCheckboxProps().convert(), id=chunk)
     
     def invoke(self, output_folder="backup/ChannelsRetriever", 
-               filename=None, backup=True, progress_bar=True) -> list[dict]:
-        return super().invoke(output_folder=output_folder, filename=filename, backup=backup, progress_bar=progress_bar)
+               filename=None, backup=True) -> list[dict]:
+        return super().invoke(output_folder=output_folder, filename=filename, backup=backup)
