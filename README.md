@@ -1,6 +1,6 @@
 # YouTube Data API Wrapper
 
-<img src="introductions.png" alt="Introduction of this wrapper">
+<img src="Introductions.png" alt="Introduction of this wrapper">
 
 <i>Introduction to the wrapper</i>
 
