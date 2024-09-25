@@ -1,1 +1,1 @@
-from .main import ItemThumbnail, BaseContainer
+from .main import ItemThumbnail, BaseItem, BaseContainer

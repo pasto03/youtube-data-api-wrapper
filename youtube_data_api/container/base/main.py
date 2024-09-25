@@ -9,7 +9,10 @@ class ItemThumbnail:
     width: Optional[str] = None
     height: Optional[str] = None
 
-        
+
+class BaseItem:...
+
+
 class BaseContainer:
     """
     base items parser class
