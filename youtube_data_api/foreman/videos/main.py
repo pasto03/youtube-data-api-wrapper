@@ -1,0 +1,13 @@
+from youtube_data_api.retriever import VideosRetriever
+from youtube_data_api.container import VideosContainer
+from youtube_data_api.shipper import VideoShipper
+
+from youtube_data_api.foreman.base import UniqueForeman
+
+
+class VideosForeman(UniqueForeman):
+    def __init__(self):
+        super().__init__()
+        self.retriever = VideosRetriever
+        self.container = VideosContainer
+        self.shipper = VideoShipper

@@ -6,6 +6,16 @@ RetrieveMethod: TypeAlias = Literal["head", "custom", "all"]
 
 @dataclass
 class PipeSettings:
+    """
+    Settings for IterablePipe.
+    
+    Args:
+        retrieval (RetrieveMethod): 
+            - head: only retrieve n items for first page where n=50
+            - custom: only retrieve n items for first page where n=n
+            - all: retrieve 5 pages of items(capped to avoid quota overuse)
+        n(int): effective when retrieval="custom"
+    """
     retrieval: RetrieveMethod = "all"
     n: int = 50
         

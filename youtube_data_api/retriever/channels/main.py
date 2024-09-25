@@ -4,6 +4,23 @@ from .pipe import ChannelsPipe
 
 
 class ChannelsRetriever(UniqueRetriever):
+    """
+    Retrieve channel details.
+
+    Attributes
+    ----------
+    pipe_fn : any
+        API to obtain response.
+    pipe : ChannelsPipe
+        Pipe to process request by arguments.
+
+    Parameters
+    ----------
+    iterable : list of str
+        A list of channel IDs.
+    developerKey : str
+        API key obtained from Google Dev Console.
+    """
     def __init__(self, iterable: list[str], developerKey: str):
         super().__init__(iterable, developerKey)
         self.pipe_fn = self.client.channels()

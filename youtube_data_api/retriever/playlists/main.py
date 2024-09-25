@@ -4,6 +4,25 @@ from .pipe import PlaylistsPipe
 
 
 class PlaylistsRetriever(IterableRetriever):
+    """
+    Retrieve playlists from a channel.
+
+    Attributes
+    ----------
+    pipe_fn : any
+        API to obtain response.
+    pipe : PlaylistsPipe
+        Pipe to process request by arguments.
+
+    Parameters
+    ----------
+    iterable : list of str
+        A list of channel IDs.
+    developerKey : str
+        API key obtained from Google Dev Console.
+    settings : PipeSettings
+        Determines how many pages of response to be obtained.
+    """
     def __init__(self, iterable: list[str], developerKey: str, settings: PipeSettings = PipeSettings()):
         super().__init__(iterable=iterable, developerKey=developerKey, settings=settings)
         # these parameters need to be overwritten

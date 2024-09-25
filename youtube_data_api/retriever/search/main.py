@@ -4,6 +4,28 @@ from .params import SearchParams, SearchTypeCheckboxProps
 
 
 class SearchRetriever(IterableRetriever):
+    """
+    Retrieve channel, playlist, or video by given keywords.
+
+    Attributes
+    ----------
+    pipe_fn : any
+        API to obtain response.
+    pipe : SearchPipe
+        Pipe to process request by arguments.
+
+    Parameters
+    ----------
+    keywords : list of str
+        A list of string keywords.
+    developerKey : str
+        API key obtained from Google Dev Console.
+    types : SearchTypeCheckboxProps
+        Specify if channel, video, or playlist will be included in the search.
+    settings : PipeSettings
+        Determines how many pages of response to be obtained.
+    """
+
     def __init__(self, keywords: list[str], developerKey: str, 
                  types: SearchTypeCheckboxProps = SearchTypeCheckboxProps(),
                  settings: PipeSettings = PipeSettings()):
