@@ -1,43 +1,19 @@
 from dataclasses import asdict
-import os
 
 from youtube_data_api.container.playlist_items.main import PlaylistItemsItem
-from youtube_data_api.utils import get_current_time, dict_to_json
+from ..base import BaseShipper
 
 
-class PlaylistItemShipper:
+class PlaylistItemShipper(BaseShipper):
     def __init__(self):
-        self.main_records: list[dict] = list()
-        self.thumbnails: list[dict] = list()
-            
-    def invoke(self, items: list[PlaylistItemsItem], output_folder="backup/PlaylistItemShipper", 
-               filename=None, backup=True) -> None:
+        super().__init__()
+        self.output_folder = "backup/PlaylistItemShipper"
+    
+    def invoke(self, items: list[PlaylistItemsItem], output_folder=None, backup=True) -> None:
         """
         run the shipper and obtain output
         """
-        
-        for item in items:
-            self.main_records.append(self._extract_details(item))
-            self.thumbnails.extend(self._extract_thumbnails(item))
-        
-        if backup:
-            self._handle_backup(self.main_records, suffix=" main records", output_folder=output_folder, 
-               filename=filename)
-            self._handle_backup(self.thumbnails, suffix=" thumbnails", output_folder=output_folder, 
-               filename=filename)
-        
-#         return self.main_records, self.thumbnails
-    
-    @staticmethod
-    def _handle_backup(records: list[dict], suffix="", output_folder="backup/ChannelShipper", 
-               filename=None):
-        if not os.path.exists(output_folder):
-            os.makedirs(output_folder)
-        if not filename:
-            filename = get_current_time() + suffix + ".json"
-        records = dict_to_json(records)
-        with open(os.path.join(output_folder, filename), "wb") as f:
-            f.write(records.encode("utf-8"))
+        return super().invoke(items=items, output_folder=output_folder, backup=backup)
     
     @staticmethod
     def _extract_details(item: PlaylistItemsItem) -> dict:
