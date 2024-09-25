@@ -33,11 +33,11 @@ class ChannelShipper:
                filename=None):
         if not os.path.exists(output_folder):
             os.makedirs(output_folder)
-            if not filename:
-                filename = get_current_time() + suffix + ".json"
-            records = dict_to_json(records)
-            with open(os.path.join(output_folder, filename), "wb") as f:
-                f.write(records.encode("utf-8"))
+        if not filename:
+            filename = get_current_time() + suffix + ".json"
+        records = dict_to_json(records)
+        with open(os.path.join(output_folder, filename), "wb") as f:
+            f.write(records.encode("utf-8"))
     
     @staticmethod
     def _extract_details(item: ChannelItem) -> dict:
