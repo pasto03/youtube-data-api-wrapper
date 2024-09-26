@@ -74,9 +74,9 @@ class ChannelsContainer(BaseContainer):
     def _extract_statistics(self, raw_statistics: dict) -> ChannelStatistics:
         statistics = ChannelStatistics()
 
-        statistics.hiddenSubscriberCount = raw_statistics['hiddenSubscriberCount']
-        statistics.viewCount = int(raw_statistics.get('viewCount'))
-        statistics.subscriberCount = int(raw_statistics.get('subscriberCount'))
-        statistics.videoCount = int(raw_statistics.get('videoCount'))
+        statistics.hiddenSubscriberCount = raw_statistics.get('hiddenSubscriberCount', -1)
+        statistics.viewCount = int(raw_statistics.get('viewCount', -1))
+        statistics.subscriberCount = int(raw_statistics.get('subscriberCount', -1))
+        statistics.videoCount = int(raw_statistics.get('videoCount', -1))
         
         return statistics

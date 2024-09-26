@@ -130,10 +130,9 @@ class VideosContainer(BaseContainer):
     def _extract_statistics(self, raw_statistics) -> VideoItemStatistics:
         statistics = VideoItemStatistics()
 
-        statistics.viewCount = int(raw_statistics.get('viewCount'))
-        statistics.likeCount = int(raw_statistics.get('likeCount'))
-        statistics.favouriteCount = int(raw_statistics.get('favoriteCount'))
-        commentCount = raw_statistics.get('commentCount')
-        statistics.commentCount = None if not commentCount else int(commentCount)
+        statistics.viewCount = int(raw_statistics.get('viewCount', -1))
+        statistics.likeCount = int(raw_statistics.get('likeCount', -1))
+        statistics.favouriteCount = int(raw_statistics.get('favoriteCount', -1))
+        statistics.commentCount = int(raw_statistics.get('commentCount', -1))
         
         return statistics
