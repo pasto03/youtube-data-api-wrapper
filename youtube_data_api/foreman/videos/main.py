@@ -11,3 +11,6 @@ class VideosForeman(UniqueForeman):
         self.retriever = VideosRetriever
         self.container = VideosContainer
         self.shipper = VideoShipper
+
+    def invoke(self, iterable: list[str], developerKey: str, backup=True) -> VideoShipper:
+        return super().invoke(iterable=iterable, developerKey=developerKey, backup=backup)
