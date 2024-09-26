@@ -6,6 +6,9 @@ from youtube_data_api.foreman.base import UniqueForeman
 
 
 class ChannelsForeman(UniqueForeman):
+    """
+    Retrieve channel details and convert to 1D dict.
+    """
     def __init__(self):
         super().__init__()
         self.retriever = ChannelsRetriever

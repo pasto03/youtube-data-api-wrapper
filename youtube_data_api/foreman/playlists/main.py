@@ -7,6 +7,9 @@ from youtube_data_api.retriever.base import PipeSettings
 from youtube_data_api.foreman.base import IterableForeman
 
 class PlaylistsForeman(IterableForeman):
+    """
+    Retrieve playlist details and convert to 1D dict.
+    """
     def __init__(self):
         super().__init__()
         self.retriever = PlaylistsRetriever
