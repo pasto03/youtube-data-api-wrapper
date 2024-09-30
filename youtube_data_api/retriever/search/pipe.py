@@ -17,7 +17,7 @@ class SearchPipe(IterablePipe):
     def __init__(self, params: SearchParams, pipe_fn=None, 
              retrieval: RetrieveMethod = "head", n=10):
         super().__init__(params=params, pipe_fn=pipe_fn, retrieval=retrieval, n=n)
-        self.max_page = 5
+        self.max_page = 5   # limitation for searchPipe to avoid using too much quota
     
     def _get_all_response(self):
         return super()._get_all_response(max_page=self.max_page)
