@@ -18,5 +18,5 @@ settings = PipeSettings(retrieval="custom", n=10)
 settings = PipeSettings(retrieval="all")
 
 
-worker = SearchRetriever(keywords=["90's China Pop songs"], developerKey="YOUR DEV KEY", settings=settings)
+worker = SearchRetriever(iterable=["90's China Pop songs"], developerKey="YOUR DEV KEY", settings=settings)
 worker.invoke()

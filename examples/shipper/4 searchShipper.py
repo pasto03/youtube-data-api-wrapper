@@ -6,7 +6,7 @@ import pandas as pd
 
 # 1. retrieve raw items
 developerKey = open("developerKey", "rb").read().decode()
-worker = SearchRetriever(keywords=["Japanese City Pop"], developerKey=developerKey)
+worker = SearchRetriever(iterable=["Japanese City Pop"], developerKey=developerKey)
 raw_items = worker.invoke(backup=False)
 
 

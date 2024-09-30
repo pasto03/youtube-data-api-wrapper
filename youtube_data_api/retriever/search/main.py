@@ -1,6 +1,6 @@
 from ..base import IterableRetriever, PipeSettings
 from .pipe import SearchPipe
-from .params import SearchParams, SearchTypeCheckboxProps
+from .params import SearchParams, SearchTypeCheckboxProps, SearchParamProps
 
 
 class SearchRetriever(IterableRetriever):
@@ -16,8 +16,8 @@ class SearchRetriever(IterableRetriever):
 
     Parameters
     ----------
-    keywords : list of str
-        A list of string keywords.
+    iterable : list of SearchParamProps
+        A list of SearchParamProps.
     developerKey : str
         API key obtained from Google Dev Console.
     types : SearchTypeCheckboxProps
@@ -26,17 +26,17 @@ class SearchRetriever(IterableRetriever):
         Determines how many pages of response to be obtained.
     """
 
-    def __init__(self, keywords: list[str], developerKey: str, 
+    def __init__(self, iterable: list[SearchParamProps], developerKey: str, 
                  types: SearchTypeCheckboxProps = SearchTypeCheckboxProps(),
                  settings: PipeSettings = PipeSettings()):
-        super().__init__(iterable=keywords, developerKey=developerKey, settings=settings)
+        super().__init__(iterable=iterable, developerKey=developerKey, settings=settings)
         # these parameters need to be overwritten
         self.types = types
         self.pipe_fn = self.client.search()
         self.pipe = SearchPipe
     
-    def _create_params(self, i):
-        return SearchParams(q=i, type=self.types.convert(), order="relevance")
+    def _create_params(self, i: SearchParamProps):
+        return SearchParams(**i.to_dict(), type=self.types.convert(), order="relevance")
     
     def invoke(self, output_folder="backup/SearchRetriever", 
            filename=None, backup=True) -> list[dict]:
