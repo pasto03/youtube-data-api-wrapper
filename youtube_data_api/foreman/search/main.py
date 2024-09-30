@@ -26,3 +26,4 @@ class SearchForeman:
         # 3. pack boxes
         shipper = SearchShipper()
         shipper.invoke(box.items, backup=backup)
+        return shipper
