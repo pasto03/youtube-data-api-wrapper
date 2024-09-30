@@ -3,7 +3,7 @@ from youtube_data_api.container import SearchContainer
 from youtube_data_api.shipper import SearchShipper
 
 from youtube_data_api.retriever.base import PipeSettings
-from youtube_data_api.retriever.search.params import SearchTypeCheckboxProps
+from youtube_data_api.retriever.search.params import SearchTypeCheckboxProps, SearchParamProps
 
 
 class SearchForeman:
@@ -13,7 +13,7 @@ class SearchForeman:
     def __init__(self) -> None:
         pass
 
-    def invoke(self, iterable: list[str], developerKey: str, 
+    def invoke(self, iterable: list[SearchParamProps], developerKey: str, 
                types: SearchTypeCheckboxProps = SearchTypeCheckboxProps(),
                settings: PipeSettings = PipeSettings, backup=True) -> SearchShipper:
         # 1. retrieve raw items
