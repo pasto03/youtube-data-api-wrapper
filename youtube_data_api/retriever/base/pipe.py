@@ -18,7 +18,7 @@ class IterablePipe:
         self.params = params
         self.pipe_fn = pipe_fn
         self.retrieval = retrieval
-        self.n = n
+        self.n = n   # only valid when retrieval set to "custom"
         self.hard_limit = 50
         
     def _get_response(self, pageToken=None, n=None) -> dict:
@@ -40,12 +40,15 @@ class IterablePipe:
         nextPageToken = first_response.get("nextPageToken")
         # print("nextPageToken: {}".format(nextPageToken))
         page_info = first_response['pageInfo']
+        # return with empty list when no results obtained
+        if not page_info['resultsPerPage']:
+            return all_response
         num_page = math.ceil(page_info['totalResults'] / page_info['resultsPerPage'])
         # specifically for any pipe that needs early stop
         if max_page:
             num_page = min(max_page, num_page)
             
-        all_response.extend(first_response.get("items"))
+        all_response.extend(first_response)
         if not nextPageToken:
             return all_response
         
@@ -59,7 +62,7 @@ class IterablePipe:
         
         while nextPageToken and (count < num_page):
             response = self._get_response(pageToken=nextPageToken)
-            all_response.extend(response.get("items"))
+            all_response.extend(response)
             nextPageToken = response.get("nextPageToken")
 #             print("Current count:", count)
 #             print("nextPageToken: {}".format(nextPageToken))
@@ -72,19 +75,23 @@ class IterablePipe:
         
         return all_response
     
-    def run_pipe(self) -> list[dict] | None:
+    def run_pipe(self, items_only=True) -> list[dict] | None:
         """call API and return list of items"""
         if self.retrieval == "head":
-            return self._get_response().get("items")
+            response = self._get_response()
+            return response.get("items") if items_only else response
         
         elif self.retrieval == "custom":
             n = self.n
             assert n > 0 and type(n) == int, "only positive integer allowed"
             n = min(n, self.hard_limit)
-            return self._get_response(n=n).get("items")
+            response = self._get_response(n=n)
+            return response.get("items") if items_only else response
         
         elif self.retrieval == "all":
-            return self._get_all_response()
+            all_response = self._get_all_response()
+            all_items = [response.get("items") for response in all_response]
+            return all_items if items_only else all_response
         
 
 class UniquePipe:
@@ -104,7 +111,7 @@ class UniquePipe:
         response = request.execute()
         return response
     
-    def run_pipe(self) -> list[dict] | None:
+    def run_pipe(self, items_only=True) -> list[dict] | None:
         """fetch response from API; if no item fetched, return None"""
         response = self._get_response()
-        return response.get("items", None)
+        return response.get("items") if items_only else response

@@ -1,5 +1,6 @@
 import pkg_resources
 from setuptools import setup, find_packages
+import os
 
 setup(
     name="youtube_data_api",  # Name of the module

@@ -37,7 +37,7 @@ class SearchParamProps:
 @dataclass
 class SearchParams:
     q: str
-    type: str 
+    type: Literal['video', 'channel', 'playlist'] 
         
     channelId: Optional[str] = None
     pageToken: Optional[str] = None
