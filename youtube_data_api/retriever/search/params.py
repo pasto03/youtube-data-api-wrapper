@@ -28,7 +28,7 @@ class SearchParamProps:
     videoDuration: Optional[VideoDurationProps] = "any"
 
     order: Optional[OrderProps] = "relevance"
-    publishedAfter: Optional[str] = None    # RFC 3339 formatted date-time value
+    # publishedAfter: Optional[str] = None    # RFC 3339 formatted date-time value
 
     def to_dict(self):
         return {k:v for k, v in asdict(self).items() if v is not None}
@@ -49,7 +49,7 @@ class SearchParams:
     maxResults: int = 50
 
     order: OrderProps = "relevance" 
-    publishedAfter: Optional[str] = None
+    # publishedAfter: Optional[str] = None
 
     def to_dict(self):
         return {k:v for k, v in asdict(self).items() if v is not None}
