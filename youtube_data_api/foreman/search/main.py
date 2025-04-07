@@ -15,7 +15,7 @@ class SearchForeman:
 
     def invoke(self, iterable: list[SearchParamProps], developerKey: str, 
                types: SearchTypeCheckboxProps = SearchTypeCheckboxProps(),
-               settings: PipeSettings = PipeSettings, backup=True) -> SearchShipper:
+               settings: PipeSettings = PipeSettings(), backup=True) -> SearchShipper:
         # 1. retrieve raw items
         worker = SearchRetriever(iterable=iterable, developerKey=developerKey, types=types, settings=settings)
         raw_items = worker.invoke(backup=backup)

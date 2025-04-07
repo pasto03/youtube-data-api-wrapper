@@ -36,12 +36,12 @@ class IterablePipe:
         # print("inside _get_all_response")
         all_response = list()
         first_response = self._get_response()
-        print("First response:", first_response)
+        # print("First response:", first_response)
         
         nextPageToken = first_response.get("nextPageToken")
-        print("nextPageToken: {}".format(nextPageToken))
+        # print("nextPageToken: {}".format(nextPageToken))
         page_info = first_response['pageInfo']
-        print("pageInfo:", page_info)
+        # print("pageInfo:", page_info)
         # return with empty list when no results obtained
         if not page_info['resultsPerPage']:
             return all_response
@@ -64,10 +64,10 @@ class IterablePipe:
         
         while nextPageToken and (count <= num_page):
             response = self._get_response(pageToken=nextPageToken)
-            print("new response:", response)
+            # print("new response:", response)
             all_response.append(response)
             nextPageToken = response.get("nextPageToken")
-            print("Current count:", count)
+            # print("Current count:", count)
 #             print("nextPageToken: {}".format(nextPageToken))
             # bar.update()
             count += 1
@@ -80,7 +80,7 @@ class IterablePipe:
     
     def run_pipe(self, items_only=True) -> list[dict] | None:
         """call API and return list of items"""
-        print("run_pipe() is called")
+        # print("run_pipe() is called")
         if self.retrieval == "head":
             response = self._get_response()
             return response.get("items") if items_only else response
@@ -94,7 +94,7 @@ class IterablePipe:
         
         elif self.retrieval == "all":
             all_response = self._get_all_response()
-            print("response: ", all_response)
+            # print("response: ", all_response)
             all_items = list()
             for response in all_response:
                 all_items.extend(response.get("items"))

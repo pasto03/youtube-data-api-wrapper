@@ -24,7 +24,7 @@ class BaseShipper:
             self._handle_backup(self.main_records, suffix=" main records", output_folder=output_folder)
             self._handle_backup(self.thumbnails, suffix=" thumbnails", output_folder=output_folder)
         
-        print("All records have been packed.")
+        print("{} main records have been packed.".format(len(self.main_records)))
 #         return self.main_records, self.thumbnails
     
     def _handle_backup(self, records: list[dict], suffix="", output_folder=None):
