@@ -8,7 +8,7 @@ from youtube_data_api.retriever.search.params import SearchTypeCheckboxProps, Se
 
 class SearchForeman:
     """
-    Retrieve search details and convert to 1D dict.
+    Retrieve search details given a list of SearchParamProps and convert to 1D dict.
     """
     def __init__(self):
         self._page_info = None

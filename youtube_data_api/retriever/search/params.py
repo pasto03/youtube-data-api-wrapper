@@ -10,9 +10,9 @@ class SearchTypeCheckboxProps:
     """
     set any property in this checkbox to true for API to return the specific property
     """
-    channel: bool = True
-    playlist: bool = True
-    video: bool = True
+    channel: bool = False
+    playlist: bool = False
+    video: bool = False
         
     def convert(self):
         """convert selected checkbox parts to string"""

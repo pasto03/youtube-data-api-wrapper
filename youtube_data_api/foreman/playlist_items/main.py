@@ -7,7 +7,7 @@ from youtube_data_api.foreman.base import IterableForeman
 
 class PlaylistItemsForeman(IterableForeman):
     """
-    Retrieve playlistItems and convert to 1D dict.
+    Retrieve playlistItems given a playlistId and convert to 1D dict.
     """
     def __init__(self):
         super().__init__()
@@ -16,5 +16,5 @@ class PlaylistItemsForeman(IterableForeman):
         self.shipper = PlaylistItemShipper
     
     def invoke(self, iterable: list[str], developerKey: str, 
-               settings: PipeSettings = PipeSettings, backup=True) -> PlaylistItemShipper:
+               settings: PipeSettings = PipeSettings(), backup=True) -> PlaylistItemShipper:
         return super().invoke(iterable=iterable, developerKey=developerKey, settings=settings, backup=backup)
