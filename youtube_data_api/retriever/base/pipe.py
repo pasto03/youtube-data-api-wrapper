@@ -20,6 +20,9 @@ class IterablePipe:
         self.retrieval = retrieval
         self.n = n   # only valid when retrieval set to "custom"
         self.hard_limit = 50
+
+        # will be assigned a value when _get_all_response() is called
+        self._page_info = None
         
     def _get_response(self, pageToken=None, n=None) -> dict:
         if not self.pipe_fn:
@@ -40,13 +43,18 @@ class IterablePipe:
         
         nextPageToken = first_response.get("nextPageToken")
         # print("nextPageToken: {}".format(nextPageToken))
-        page_info = first_response['pageInfo']
+        page_info: dict = first_response['pageInfo']
         # print("pageInfo:", page_info)
         # return with empty list when no results obtained
         if not page_info['resultsPerPage']:
             return all_response
+
         num_page = math.ceil(page_info['totalResults'] / page_info['resultsPerPage'])
-        # specifically for any pipe that needs early stop
+
+        # record API call page info
+        self._page_info = page_info
+
+        # specifically for any pipe that needs early stop(eg. SearchPipe)
         if max_page:
             num_page = min(max_page, num_page)
             

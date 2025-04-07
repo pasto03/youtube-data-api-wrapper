@@ -10,8 +10,8 @@ class SearchForeman:
     """
     Retrieve search details and convert to 1D dict.
     """
-    def __init__(self) -> None:
-        pass
+    def __init__(self):
+        self._page_info = None
 
     def invoke(self, iterable: list[SearchParamProps], developerKey: str, 
                types: SearchTypeCheckboxProps = SearchTypeCheckboxProps(),
@@ -19,6 +19,9 @@ class SearchForeman:
         # 1. retrieve raw items
         worker = SearchRetriever(iterable=iterable, developerKey=developerKey, types=types, settings=settings)
         raw_items = worker.invoke(backup=backup)
+
+        # print(worker._page_info)
+        self._page_info = worker._page_info
 
         # 2. box raw items
         box = SearchContainer(raw_items)

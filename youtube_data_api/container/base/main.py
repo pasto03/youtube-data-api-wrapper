@@ -10,6 +10,13 @@ class ItemThumbnail:
     height: Optional[str] = None
 
 
+@dataclass
+class PageInfo:
+    totalResults: int = None
+    resultsPerPage: int = None
+    numPages: int = None
+
+
 class BaseItem:...
 
 
@@ -20,7 +27,7 @@ class BaseContainer:
     set self.items = self._extract_item(self.raw_items) when inherited
     """
     def __init__(self, raw_items: list[dict]):
-        self.raw_items: raw_items
+        self.raw_items = raw_items
         
     def _extract_item(self, raw_items):
         raise NotImplementedError

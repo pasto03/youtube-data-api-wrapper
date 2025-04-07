@@ -16,6 +16,7 @@ class IterableRetriever:
         self.pipe_fn = None
         self.pipe = IterablePipe
         self.settings = settings
+        self._page_info = None
         
     def _create_params(self, i):
         return BaseParams(part='snippet')
@@ -34,6 +35,8 @@ class IterableRetriever:
             # print(params)
             pipe = self.pipe(params, self.pipe_fn, **self.settings.to_dict())
             items = pipe.run_pipe()
+
+            self._page_info = pipe._page_info
 #             print(items)
             # filter empty items
             if items:
