@@ -33,7 +33,7 @@ class PlaylistsContainer(BaseContainer):
         self.raw_items = raw_items
         self.items: list | list[PlaylistsItem] = self._extract_item(self.raw_items)
             
-    def _extract_item(self, raw_items) -> list | list[PlaylistsItem]:
+    def _extract_item(self, raw_items: list[dict]) -> list | list[PlaylistsItem]:
         if len(raw_items) == 0:
             return list()
         items = []

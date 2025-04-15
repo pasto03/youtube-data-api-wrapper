@@ -107,3 +107,27 @@ class UniqueRetriever:
                 f.write(records.encode("utf-8"))
         
         return raw_items
+
+
+class SingleRetriever:
+    def __init__(self, params: BaseParams, developerKey: str):
+        self.params = params
+        self.client = build_client(developerKey)
+        self.pipe_fn = None
+        self.pipe = UniquePipe
+        
+    def invoke(self, output_folder="backup/SingleRetriever", 
+               filename=None, backup=True) -> list[dict]:
+        pipe = self.pipe(self.params, self.pipe_fn)
+        raw_items = pipe.run_pipe()
+        
+        if backup:
+            if not os.path.exists(output_folder):
+                os.makedirs(output_folder)
+            if not filename:
+                filename = get_current_time() + ".json"
+            records = dict_to_json(raw_items)
+            with open(os.path.join(output_folder, filename), "wb") as f:
+                f.write(records.encode("utf-8"))
+        
+        return raw_items

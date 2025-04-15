@@ -10,7 +10,7 @@ class VideosCheckboxProps:
     contentDetails: bool = True
     snippet: bool = True
     statistics: bool = True
-        
+    
     def convert(self):
         """convert selected checkbox parts to string"""
         return ",".join([k for k, v in asdict(self).items() if v is True])
