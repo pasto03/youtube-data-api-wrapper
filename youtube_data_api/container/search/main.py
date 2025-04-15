@@ -51,7 +51,7 @@ class SearchContainer(BaseContainer):
                 snippet = self._extract_snippet(raw_snippet)
                 item.snippet = snippet
 
-                item.channelId = r['snippet'].get("channelId")
+                item.channelId = snippet.channelId
                 r_id = r['id']
                 item.type = r_id['kind'].replace("youtube#", "")
                 item.videoId = r_id.get("videoId")

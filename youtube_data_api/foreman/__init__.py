@@ -4,5 +4,6 @@ from .playlists import PlaylistsForeman
 from .search import SearchForeman
 from .videos import VideosForeman
 from .video_categories import VideoCategoriesForeman
+from .captions import CaptionsForeman
 
 from ..retriever.base import PipeSettings

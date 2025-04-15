@@ -42,8 +42,4 @@ class VideoCategoriesContainer(BaseContainer):
         return items
 
     def _extract_snippet(self, raw_snippet) -> VideoCategorySnippet:
-        snippet = VideoCategorySnippet()
-        snippet.title = raw_snippet["title"]
-        snippet.assignable = raw_snippet["assignable"]
-
-        return snippet
+        return VideoCategorySnippet(**raw_snippet)

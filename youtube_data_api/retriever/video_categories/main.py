@@ -16,8 +16,8 @@ class VideoCategoriesRetriever(SingleRetriever):
 
     Parameters
     ----------
-    params : list of VideoCategoriesParams
-        A list VideoCategoriesParams object as parameter.
+    params : VideoCategoriesParams
+        VideoCategoriesParams object as parameter.
     developerKey : str
         API key obtained from Google Dev Console.
     """

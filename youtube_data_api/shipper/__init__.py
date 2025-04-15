@@ -4,3 +4,4 @@ from .playlists import PlaylistShipper
 from .search import SearchShipper
 from .videos import VideoShipper
 from .video_categories import VideoCategoriesShipper
+from .captions import CaptionsShipper
