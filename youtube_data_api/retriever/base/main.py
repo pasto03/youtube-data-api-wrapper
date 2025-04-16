@@ -13,6 +13,7 @@ class IterableRetriever:
     """
     - one-to-many retrieval; eg. one channelId to multiple playlists
     - one API call per query parameter in iterative; eg. one channelId for one playlist API call
+    - one pipe created per query parameter
     """
     def __init__(self, iterable: list[str], developerKey: str, settings=PipeSettings()):
         self.iterable = iterable
@@ -37,7 +38,7 @@ class IterableRetriever:
         for i in self.iterable:
             params = self._create_params(i)
             # print(params)
-            pipe = self.pipe(params, self.pipe_fn, **self.settings.to_dict())
+            pipe = self.pipe(params, self.pipe_fn, self.settings)
             items = pipe.run_pipe()
 
             self._page_info = pipe._page_info

@@ -1,10 +1,10 @@
-from typing import TypeAlias, Literal
 import math
 
 from .params import BaseParams
+from .settings import PipeSettings
 
 
-RetrieveMethod: TypeAlias = Literal["head", "custom", "all"]
+# RetrieveMethod: TypeAlias = Literal["head", "custom", "all"]
 width = 3   # text format
 
 
@@ -13,14 +13,15 @@ class IterablePipe:
     Receive params and return resources
     Only Retriever is supposed to implement this object
     """
-    def __init__(self, params: BaseParams, pipe_fn=None, 
-                 retrieval: RetrieveMethod = "head", n=10):
+    def __init__(self, params: BaseParams, pipe_fn=None, settings: PipeSettings = PipeSettings()):
         self.params = params
         self.pipe_fn = pipe_fn
-        self.retrieval = retrieval
-        self.n = n   # only valid when retrieval set to "custom"
-        self.hard_limit = 50
+        self.retrieval = settings.retrieval
+        self.n = settings.n   # only valid when retrieval set to "custom"
+        self.max_page = settings.max_page
 
+        self.hard_limit = 50
+        
         # will be assigned a value when _get_all_response() is called
         self._page_info = None
         
@@ -35,7 +36,7 @@ class IterablePipe:
         response = request.execute()
         return response
     
-    def _get_all_response(self, max_page=None) -> list[dict]:
+    def _get_all_response(self) -> list[dict]:
         # print("inside _get_all_response")
         all_response = list()
         first_response = self._get_response()
@@ -54,9 +55,11 @@ class IterablePipe:
         # record API call page info
         self._page_info = page_info
 
+        # print("page_info:", page_info)
+
         # specifically for any pipe that needs early stop(eg. SearchPipe)
-        if max_page:
-            num_page = min(max_page, num_page)
+        # print("page limit: {} | num pages: {}".format(self.max_page, num_page))
+        num_page = min(self.max_page, num_page)
             
         all_response.append(first_response)
         if not nextPageToken:
@@ -70,7 +73,7 @@ class IterablePipe:
         count = 1
         # bar.set_description("{:^{}s} / {:^{}s} pages fetched.".format(str(count), width, str(num_page), width))
         
-        while nextPageToken and (count <= num_page):
+        while nextPageToken and (count < num_page):
             response = self._get_response(pageToken=nextPageToken)
             # print("new response:", response)
             all_response.append(response)
