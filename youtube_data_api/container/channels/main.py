@@ -10,23 +10,24 @@ class ChannelSnippet:
     description: str = None
     customUrl: str = None
     publishedAt: str = None
-    raw_thumbnails: str = None
-    thumbnails: ItemThumbnail = None
+    thumbnails: list[ItemThumbnail] = None
+    defaultLanguage: str = None
     country: Optional[str] = None
 
 @dataclass
 class ChannelStatistics:
+    viewCount: str = None
+    subscriberCount: str = None
     hiddenSubscriberCount: bool = None
-    viewCount: int = None
-    subscriberCount: int = None
-    videoCount: int = None
+    videoCount: str = None
 
 @dataclass
 class ChannelItem:
-    channelId: str = None
+    kind: str = "youtube#channel"
+    etag: str = None
+    id: str = None
     snippet: ChannelSnippet = None
     statistics: ChannelStatistics = None
-    metadata: dict = None
 
 
 class ChannelsContainer(BaseContainer):
@@ -38,45 +39,30 @@ class ChannelsContainer(BaseContainer):
     def _extract_item(self, raw_items: list[dict]) -> list | list[ChannelItem]:
         if len(raw_items) == 0:
             return list()
+        
         items = []
         for r in raw_items:
             item = ChannelItem()
-            item.metadata = deepcopy(r)
-            item.channelId = r['id']
-            
-            raw_snippet = r.get("snippet")
-            if raw_snippet:
-                snippet = self._extract_snippet(raw_snippet)
-                item.snippet = snippet
-            
-            raw_statistics = r.get('statistics')
-            if raw_statistics:
-                statistics = self._extract_statistics(raw_statistics)
-                item.statistics = statistics
-            
+
+            item.kind = r['kind']
+            item.etag = r['etag']
+            item.id = r['id']
+
+            item.snippet = self._extract_snippet(deepcopy(r['snippet']))
+
+            item.statistics = ChannelStatistics(**r['statistics'])
+
             items.append(item)
         
         return items
     
     def _extract_snippet(self, raw_snippet: dict) -> ChannelSnippet:
-        snippet = ChannelSnippet()
+        thumbnails_item = raw_snippet.pop("thumbnails")
 
-        snippet.title = raw_snippet['title']
-        snippet.description = raw_snippet['description']
-        snippet.customUrl = raw_snippet['customUrl']
-        snippet.publishedAt = raw_snippet['publishedAt']
-        snippet.raw_thumbnails = raw_snippet['thumbnails']
-        snippet.thumbnails = self._extract_thumbnail(raw_snippet['thumbnails'])
-        snippet.country = raw_snippet.get('country')
+        # remove redundant
+        raw_snippet.pop("localized")
+
+        snippet = ChannelSnippet(**raw_snippet)
+        snippet.thumbnails = self._extract_thumbnail(thumbnails_item)
 
         return snippet
-    
-    def _extract_statistics(self, raw_statistics: dict) -> ChannelStatistics:
-        statistics = ChannelStatistics()
-
-        statistics.hiddenSubscriberCount = raw_statistics.get('hiddenSubscriberCount', -1)
-        statistics.viewCount = int(raw_statistics.get('viewCount', -1))
-        statistics.subscriberCount = int(raw_statistics.get('subscriberCount', -1))
-        statistics.videoCount = int(raw_statistics.get('videoCount', -1))
-        
-        return statistics

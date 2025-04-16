@@ -10,47 +10,22 @@ class PlaylistShipper(BaseShipper):
         self.output_folder = "backup/PlaylistShipper"
     
     def invoke(self, items: list[PlaylistsItem], output_folder=None, backup=True) -> None:
-        """
-        run the shipper and obtain output
-        """
         return super().invoke(items=items, output_folder=output_folder, backup=backup)
     
-    @staticmethod
-    def _extract_details(item: PlaylistsItem) -> dict:
+    def _extract_details(self, item: PlaylistsItem) -> None:
         record = dict()
 
-        # 1. playlistId(primary key)
-        record['playlistId'] = item.playlistId
+        record['kind'] = item.kind
+        record['etag'] = item.etag
+        record['id'] = item.id
 
-        # 2. snippets
-        snippet = item.snippet
-        record['title'] = snippet.title
-        record['description'] = snippet.description
-        record['publishedAt'] = snippet.publishedAt
-        record['channelId'] = snippet.channelId
-        record['channelTitle'] = snippet.channelTitle
+        snippet_item = asdict(item.snippet)
+        thumbnails_item = snippet_item.pop("thumbnails")
 
-        # 3. contentDetails
+        self.thumbnails[item.id] = thumbnails_item
+
+        record.update(snippet_item)
+
         record['itemCount'] = item.contentDetails.itemCount
 
-        return record
-    
-    @staticmethod
-    def _extract_thumbnails(item: PlaylistsItem) -> list[dict]:
-        """
-        return a list of dict of thumbnails
-        """
-        records = list()
-
-        thumbnails = item.snippet.thumbnails
-        for tn in thumbnails:
-            record = dict()
-
-            # 1. playlistId(foreign primary key)
-            record['playlistId'] = item.playlistId
-
-            # 2. thumbnail
-            record.update(asdict(tn))
-            records.append(record)
-
-        return records
+        self.main_records.append(record)

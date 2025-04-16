@@ -4,10 +4,7 @@ from copy import deepcopy
 
 from ..base import ItemThumbnail, BaseContainer
 
-ItemType: TypeAlias = Literal["video", "channel", "playlist"]
 
-
-# simplify SearchVideoItem to BaseSearchItem
 @dataclass
 class SearchSnippet:
     """base class for all types of search snippet"""
@@ -15,20 +12,25 @@ class SearchSnippet:
     channelId: str = None
     title: str = None
     description: str = None
-    raw_thumbnails: str = None
-    thumbnails: ItemThumbnail = None
+    thumbnails: list[ItemThumbnail] = None
     channelTitle: str = None
+    liveBroadcastContent: str = None
+
+
+@dataclass
+class SearchId:
+    kind: str = None
+    videoId: str = None
+    channelId: str = None
+    playlistId: str = None
+
 
 @dataclass
 class SearchItem:
-    type: ItemType = None
+    kind: str = "youtube#searchResult"
+    etag: str = None
+    id: SearchId = None
     snippet: SearchSnippet = None
-    # must exists
-    channelId: str = None
-    # either one
-    videoId: str = None
-    playlistId: str = None
-    metadata: dict = None
 
 
 @dataclass
@@ -44,29 +46,24 @@ class SearchContainer(BaseContainer):
         items = []
         for r in raw_items:
             item = SearchItem()
-            item.metadata = deepcopy(r)
 
-            raw_snippet = r.get('snippet')
-            if raw_snippet:
-                snippet = self._extract_snippet(raw_snippet)
-                item.snippet = snippet
+            item.etag = r["etag"]
 
-                item.channelId = snippet.channelId
-                r_id = r['id']
-                item.type = r_id['kind'].replace("youtube#", "")
-                item.videoId = r_id.get("videoId")
-                item.playlistId = r_id.get("playlistId")
+            item.id = SearchId(**r["id"])
+
+            item.snippet = self._extract_snippet(deepcopy(r["snippet"]))
+
             items.append(item)
 
         return items
     
     def _extract_snippet(self, raw_snippet: dict) -> SearchSnippet:
-        snippet = SearchSnippet()
-        snippet.title = raw_snippet['title']
-        snippet.publishedAt = raw_snippet['publishedAt']
-        snippet.channelId = raw_snippet['channelId']
-        snippet.description = raw_snippet['description']
-        snippet.raw_thumbnails = raw_snippet['thumbnails']
-        snippet.thumbnails = self._extract_thumbnail(raw_snippet['thumbnails'])
-        snippet.channelTitle = raw_snippet['channelTitle']
+        thumbnails_item = raw_snippet.pop("thumbnails")
+
+        # remove redundants
+        raw_snippet.pop("publishTime")
+
+        snippet = SearchSnippet(**raw_snippet)
+        snippet.thumbnails = self._extract_thumbnail(thumbnails_item)
+
         return snippet

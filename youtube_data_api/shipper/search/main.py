@@ -9,53 +9,24 @@ class SearchShipper(BaseShipper):
         super().__init__()
         self.output_folder = "backup/SearchShipper"
     
-    def invoke(self, items: list[SearchItem], output_folder=None, backup=True) -> None:
-        """
-        run the shipper and obtain output
-        """
-        return super().invoke(items=items, output_folder=output_folder, backup=backup)
+    def invoke(self, items: list[SearchItem], output_folder=None, backup=True):
+        return super().invoke(items, output_folder, backup)
     
-    @staticmethod
-    def _extract_details(item: SearchItem):
+    def _extract_details(self, item: SearchItem) -> None:
         record = dict()
 
-        # 1. type
-        record['type'] = item.type
+        record['kind'] = item.kind
+        record['etag'] = item.etag
 
-        # 2. snippets
-        snippet = item.snippet
-        record['title'] = snippet.title
-        record['description'] = snippet.description
-        record['publishedAt'] = snippet.publishedAt
-        record['channelId'] = snippet.channelId
-        record['channelTitle'] = snippet.channelTitle
+        id_item = asdict(item.id)
+        record.update(id_item)
 
-        # 3. contentDetails
-        record['videoId'] = item.videoId
-        record['playlistId'] = item.playlistId
+        snippet_item = asdict(item.snippet)
+        thumbnails_item = snippet_item.pop("thumbnails")
 
-        return record
-    
-    @staticmethod
-    def _extract_thumbnails(item: SearchItem) -> list[dict]:
-        """
-        return a list of dict of thumbnails
-        """
-        records = list()
+        dominant_id = item.id.channelId or item.id.playlistId or item.id.videoId
+        self.thumbnails[dominant_id] = thumbnails_item
 
-        thumbnails = item.snippet.thumbnails
-        for tn in thumbnails:
-            record = dict()
-            # 1. type
-            record['type'] = item.type
+        record.update(snippet_item)
 
-            # 1. id
-            record['playlistId'] = item.playlistId
-            record['videoId'] = item.videoId
-            record['channelId'] = item.channelId
-
-            # 2. thumbnail
-            record.update(asdict(tn))
-            records.append(record)
-
-        return records
+        self.main_records.append(record)

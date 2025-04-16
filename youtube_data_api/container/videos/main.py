@@ -2,6 +2,8 @@ from dataclasses import dataclass, asdict
 from typing import Optional
 from copy import deepcopy
 
+import warnings
+
 
 from ..base import ItemThumbnail, BaseContainer
 
@@ -12,31 +14,38 @@ class VideoItemSnippet:
     channelId: str = None
     title: str = None
     description: str = None
-    raw_thumbnails: str = None
-    thumbnails: ItemThumbnail = None
+    thumbnails: list[ItemThumbnail] = None
     channelTitle: str = None
     tags: Optional[list[str]] = None
     categoryId: str = None
+    defaultLanguage: Optional[str] = None
     defaultAudioLanguage: Optional[str] = None
 
 
 @dataclass
 class VideoItemDuration:
+    warnings.warn(
+        "VideoItemDuration() is deprecated and will be removed in a future version.",
+        DeprecationWarning,
+        stacklevel=2
+    )
     h: int = None
     m: int = None
     s: int = None
         
+
 @dataclass
 class VideoItemRegionRestriction:
     allowed: Optional[list] = None
     blocked: Optional[list] = None
         
+
 @dataclass
 class VideoItemContentDetails:
-    duration: VideoItemDuration = None
+    duration: str = None
     dimension: str = None
     definition: str = None
-    caption: bool = None
+    caption: str = None
     licensedContent: bool = None
     regionRestriction: VideoItemRegionRestriction = None
 
@@ -45,17 +54,18 @@ class VideoItemContentDetails:
 class VideoItemStatistics:
     viewCount: int = None
     likeCount: int = None
-    favouriteCount: int = None
+    favoriteCount: int = None
     commentCount: int = None
 
 
 @dataclass
 class VideoItem:
-    videoId: str = None
+    kind: str = "youtube#video"
+    etag: str = None
+    id: str = None
     snippet: VideoItemSnippet = None
     contentDetails: VideoItemContentDetails = None
     statistics: VideoItemStatistics = None
-    metadata: dict = None   # unprocessed data item
 
 
 class VideosContainer(BaseContainer):
@@ -70,69 +80,49 @@ class VideosContainer(BaseContainer):
         items = []
         for r in raw_items:
             item = VideoItem()
-            item.metadata = deepcopy(r)
-            item.videoId = r['id']
+
+            item.etag = r["etag"]
+            item.id = r["id"]
             
-            raw_snippet = r.get("snippet")
-            if raw_snippet:
-                snippet = self._extract_snippet(raw_snippet)
-                item.snippet = snippet
+            snippet_item = r["snippet"]
+            item.snippet = self._extract_snippet(deepcopy(snippet_item))
             
-            raw_contentDetails = r.get('contentDetails')
-            if raw_contentDetails:
-                contentDetails = self._extract_content_details(raw_contentDetails)
-                item.contentDetails = contentDetails
+            content_details_item = r['contentDetails']
+            item.contentDetails = self._extract_content_details(deepcopy(content_details_item))
             
-            raw_statistics = r.get('statistics')
-            if raw_statistics:
-                statistics = self._extract_statistics(raw_statistics)
-                item.statistics = statistics
+            statistics_item = r['statistics']
+            item.statistics = VideoItemStatistics(**statistics_item)
             
             items.append(item)
             
         return items
             
     def _extract_snippet(self, raw_snippet: dict) -> VideoItemSnippet:
-        snippet = VideoItemSnippet()
+        thumbnails_item = raw_snippet.pop("thumbnails")
 
-        snippet.publishedAt = raw_snippet['publishedAt']
-        snippet.channelId = raw_snippet['channelId']
-        snippet.title = raw_snippet['title']
-        snippet.description = raw_snippet['description']
-        snippet.raw_thumbnails = raw_snippet['thumbnails']
-        snippet.thumbnails = self._extract_thumbnail(raw_snippet['thumbnails'])
-        snippet.channelTitle = raw_snippet['channelTitle']
-        snippet.tags = raw_snippet.get("tags")
-        categoryId = raw_snippet.get('categoryId')
-        snippet.categoryId = None if not categoryId else int(categoryId)
-        snippet.defaultAudioLanguage = raw_snippet.get('defaultAudioLanguage')
-        
+        # remove redundant
+        raw_snippet.pop("liveBroadcastContent")
+        raw_snippet.pop("localized")
+
+        snippet = VideoItemSnippet(**raw_snippet)
+        snippet.thumbnails = self._extract_thumbnail(thumbnails_item)
+
         return snippet
     
-    def _extract_content_details(self, raw_contentDetails) -> VideoItemContentDetails:
-        contentDetails = VideoItemContentDetails()
+    def _extract_content_details(self, content_details_item: dict) -> VideoItemContentDetails:
 
-        contentDetails.duration = raw_contentDetails['duration']
-        contentDetails.dimension = raw_contentDetails['dimension']
-        contentDetails.definition = raw_contentDetails['definition']
-        contentDetails.caption = True if raw_contentDetails['caption'] == "true" else False
-        contentDetails.licensedContent = raw_contentDetails['licensedContent']
+        region_restriction_item = content_details_item.get("regionRestriction")
+        region_restriction = None
 
-        regionRestriction = VideoItemRegionRestriction()
-        raw_regionRestriction = raw_contentDetails.get('regionRestriction')
-        if raw_regionRestriction:
-            regionRestriction.allowed = raw_regionRestriction.get("allowed")
-            regionRestriction.blocked = raw_regionRestriction.get("blocked")
-        contentDetails.regionRestriction = regionRestriction
+        if region_restriction_item:
+            region_restriction = VideoItemRegionRestriction(**region_restriction_item)
+            content_details_item.pop('regionRestriction')
+
+        # remove redundant
+        content_details_item.pop("contentRating")
+        content_details_item.pop("projection")
+
+        contentDetails = VideoItemContentDetails(**content_details_item)
+        contentDetails.regionRestriction = region_restriction
         
         return contentDetails
-    
-    def _extract_statistics(self, raw_statistics) -> VideoItemStatistics:
-        statistics = VideoItemStatistics()
-
-        statistics.viewCount = int(raw_statistics.get('viewCount', -1))
-        statistics.likeCount = int(raw_statistics.get('likeCount', -1))
-        statistics.favouriteCount = int(raw_statistics.get('favoriteCount', -1))
-        statistics.commentCount = int(raw_statistics.get('commentCount', -1))
-        
-        return statistics

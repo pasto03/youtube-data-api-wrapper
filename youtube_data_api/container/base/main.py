@@ -33,7 +33,7 @@ class BaseContainer:
         raise NotImplementedError
     
     # we assume this function is universal across APIs
-    def _extract_thumbnail(self, raw_thumbnails) -> list | list[ItemThumbnail]:
+    def _extract_thumbnail(self, raw_thumbnails: dict) -> list | list[ItemThumbnail]:
         if len(raw_thumbnails) == 0:
             return list()
         

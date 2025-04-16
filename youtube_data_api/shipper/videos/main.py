@@ -9,64 +9,40 @@ class VideoShipper(BaseShipper):
         super().__init__()
         self.output_folder = "backup/VideoShipper"
     
-    def invoke(self, items: list[VideoItem], output_folder=None, backup=True) -> None:
-        """
-        run the shipper and obtain output
-        """
-        return super().invoke(items=items, output_folder=output_folder, backup=backup)
+    def invoke(self, items: list[VideoItem], output_folder=None, backup=True):
+        return super().invoke(items, output_folder, backup)
 
-    @staticmethod
-    def _extract_details(item: VideoItem):
+    def _extract_details(self, item: VideoItem) -> None:
         record = dict()
 
-        # 1. videoId(primary key)
-        record['videoId'] = item.videoId
+        record['kind'] = item.kind
+        record['etag'] = item.etag
+        record['id'] = item.id
 
-        # 2. snippets
-        snippet = item.snippet
-        record['title'] = snippet.title
-        record['description'] = snippet.description
-        record['publishedAt'] = snippet.publishedAt
-        record['channelId'] = snippet.channelId
-        record['channelTitle'] = snippet.channelTitle
+        # 1. snippets
+        snippet_item = asdict(item.snippet)
+        thumbnails_item: list[dict] = snippet_item.pop("thumbnails")
 
-        tags = snippet.tags
-        tags = "" if not tags else "#" + " #".join(tags)
-        record['tags'] = tags
-        record['categoryId'] = snippet.categoryId
-        record['defaultAudioLanguage'] = snippet.defaultAudioLanguage
+        # thumbnails for corresponding videoId
+        self.thumbnails[item.id] = thumbnails_item
 
-        # 3. contentDetails
-        details = item.contentDetails
-        record['duration'] = details.duration
-        record['caption'] = details.caption
-        record['licensedContent'] = details.licensedContent
+        record.update(snippet_item)
 
-        # 4. statistics
-        stats = item.statistics
-        record['favouriteCount'] = stats.favouriteCount
-        record['commentCount'] = stats.commentCount
-        record["viewCount"] = stats.viewCount
-        record["likeCount"] = stats.likeCount
+        tags = record.get("tags")
+        if tags:
+            record['tags'] = "#" + " #".join(tags)
 
-        return record
-    
-    @staticmethod
-    def _extract_thumbnails(item: VideoItem) -> list[dict]:
-        """
-        return a list of dict of thumbnails
-        """
-        records = list()
+        # 2. contentDetails
+        content_details_item = asdict(item.contentDetails)
+        region_restriction_item = content_details_item.get("regionRestriction")
 
-        thumbnails = item.snippet.thumbnails
-        for tn in thumbnails:
-            record = dict()
+        # this attribute will be removed for ease of flattening (losing details)
+        if region_restriction_item:
+            content_details_item.pop("regionRestriction")
 
-            # 1. videoId(foreign primary key)
-            record['videoId'] = item.videoId
+        record.update(content_details_item)
 
-            # 2. thumbnail
-            record.update(asdict(tn))
-            records.append(record)
+        # 3. statistics
+        record.update(asdict(item.statistics))
 
-        return records
+        self.main_records.append(record)

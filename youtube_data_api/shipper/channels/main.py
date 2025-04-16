@@ -9,54 +9,23 @@ class ChannelShipper(BaseShipper):
         super().__init__()
         self.output_folder = "backup/ChannelShipper"
     
-    def invoke(self, items: list[ChannelItem], output_folder=None, backup=True) -> None:
-        """
-        run the shipper and obtain output
-        """
-        return super().invoke(items=items, output_folder=output_folder, backup=backup)
+    def invoke(self, items: list[ChannelItem], output_folder=None, backup=True):
+        return super().invoke(items, output_folder, backup)
     
-    @staticmethod
-    def _extract_details(item: ChannelItem) -> dict:
-        """
-        extract main details of record
-        """
+    def _extract_details(self, item: ChannelItem) -> None:
         record = dict()
-        # 1. channelId(primary key)
-        record['channelId'] = item.channelId
 
-        # 2. snippets(except thumbnails) 
-        snippet = item.snippet
-        record['title'] = snippet.title
-        record['description'] = snippet.description
-        record['customUrl'] = snippet.customUrl
-        record['publishedAt'] = snippet.publishedAt
-        record['country'] = snippet.country
+        record['kind'] = item.kind
+        record['etag'] = item.etag
+        record['id'] = item.id
 
-        # 3. statistics
-        stats = item.statistics
-        record['hiddenSubscriberCount'] = stats.hiddenSubscriberCount
-        record['viewCount'] = stats.viewCount
-        record['subscriberCount'] = stats.subscriberCount
-        record['videoCount'] = stats.videoCount
+        snippet_item = asdict(item.snippet)
+        thumbnails_item: list[dict] = snippet_item.pop("thumbnails")
 
-        return record
-    
-    @staticmethod
-    def _extract_thumbnails(item: ChannelItem) -> list[dict]:
-        """
-        return a list of dict of thumbnails
-        """
-        records = list()
+        self.thumbnails[item.id] = thumbnails_item
 
-        thumbnails = item.snippet.thumbnails
-        for tn in thumbnails:
-            record = dict()
+        record.update(snippet_item)
 
-            # 1. channelId(foreign primary key)
-            record['channelId'] = item.channelId
+        record.update(asdict(item.statistics))
 
-            # 2. thumbnail
-            record.update(asdict(tn))
-            records.append(record)
-
-        return records
+        self.main_records.append(record)
