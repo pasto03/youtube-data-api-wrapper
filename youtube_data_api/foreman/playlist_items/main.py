@@ -5,6 +5,7 @@ from youtube_data_api.shipper import PlaylistItemShipper
 from youtube_data_api.retriever.base import PipeSettings
 from youtube_data_api.foreman.base import IterableForeman
 
+
 class PlaylistItemsForeman(IterableForeman):
     """
     Retrieve playlistItems given a playlistId and convert to 1D dict.

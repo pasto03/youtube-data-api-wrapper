@@ -10,6 +10,10 @@ from .params import BaseParams
 
 
 class IterableRetriever:
+    """
+    - one-to-many retrieval; eg. one channelId to multiple playlists
+    - one API call per query parameter in iterative; eg. one channelId for one playlist API call
+    """
     def __init__(self, iterable: list[str], developerKey: str, settings=PipeSettings()):
         self.iterable = iterable
         self.client = build_client(developerKey)
@@ -61,6 +65,10 @@ class IterableRetriever:
     
 
 class UniqueRetriever:
+    """
+    - one-to-one retrieval; eg. one channelId to one channel details
+    - batch processing for maximizing API call efficiency
+    """
     def __init__(self, iterable: list[str], developerKey: str):
         self.iterable = iterable
         self.chunks = split_list(self.iterable, chunk_size=50)   # split to chunks containing multiple ids
@@ -110,6 +118,10 @@ class UniqueRetriever:
 
 
 class SingleRetriever:
+    """
+    - one-to-one retrieval where only one(group of) item(s) retrieved
+    - eg. one caption resource obtained for one videoId
+    """
     def __init__(self, params: BaseParams, developerKey: str):
         self.params = params
         self.client = build_client(developerKey)

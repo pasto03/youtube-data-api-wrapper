@@ -29,7 +29,7 @@ class IterablePipe:
             raise ValueError("Do not implement this object explicitly. Use Retriever instead.")
         
         self.params.pageToken = pageToken
-        self.params.maxResults = 50 if not n else n
+        self.params.maxResults = self.hard_limit if not n else n
 #         print(self.params)
         request = self.pipe_fn.list(**self.params.to_dict())
         response = request.execute()

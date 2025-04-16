@@ -5,3 +5,4 @@ from .search import SearchShipper
 from .videos import VideoShipper
 from .video_categories import VideoCategoriesShipper
 from .captions import CaptionsShipper
+from .comment_threads import CommentThreadsShipper

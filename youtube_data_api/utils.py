@@ -20,3 +20,13 @@ def build_client(developerKey):
     client = build('youtube', 'v3', developerKey=developerKey)
     return client
 
+def handle_backup(raw_items: list[dict], output_folder="backup/Backups", filename=None):
+    import os
+
+    if not os.path.exists(output_folder):
+        os.makedirs(output_folder)
+    if not filename:
+        filename = get_current_time() + ".json"
+    records = dict_to_json(raw_items)
+    with open(os.path.join(output_folder, filename), "wb") as f:
+        f.write(records.encode("utf-8"))
