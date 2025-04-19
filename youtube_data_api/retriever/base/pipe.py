@@ -31,21 +31,18 @@ class IterablePipe:
         
         self.params.pageToken = pageToken
         self.params.maxResults = self.hard_limit if not n else n
-#         print(self.params)
+
         request = self.pipe_fn.list(**self.params.to_dict())
         response = request.execute()
         return response
     
-    def _get_all_response(self) -> list[dict]:
-        # print("inside _get_all_response")
+    def _get_all_response(self, infinite_query: bool = False) -> list[dict]:
         all_response = list()
         first_response = self._get_response()
-        # print("First response:", first_response)
         
         nextPageToken = first_response.get("nextPageToken")
-        # print("nextPageToken: {}".format(nextPageToken))
         page_info: dict = first_response['pageInfo']
-        # print("pageInfo:", page_info)
+
         # return with empty list when no results obtained
         if not page_info['resultsPerPage']:
             return all_response
@@ -55,43 +52,29 @@ class IterablePipe:
         # record API call page info
         self._page_info = page_info
 
-        # print("page_info:", page_info)
-
-        # specifically for any pipe that needs early stop(eg. SearchPipe)
-        # print("page limit: {} | num pages: {}".format(self.max_page, num_page))
-        num_page = min(self.max_page, num_page)
+        # for example, comment threads only show "resultsPerPage" == "totalResults" even there are more comment threads
+        if infinite_query:
+            num_page = self.max_page
+        else:
+            num_page = min(self.max_page, num_page)
             
         all_response.append(first_response)
         if not nextPageToken:
             return all_response
-        
-        # all_response.extend(first_response.get("items"))
-
-#         print("num pages:", num_page)
-        # bar = tqdm(total=num_page)
-        # bar.update()   # first batch already obtained
+    
         count = 1
-        # bar.set_description("{:^{}s} / {:^{}s} pages fetched.".format(str(count), width, str(num_page), width))
         
         while nextPageToken and (count < num_page):
             response = self._get_response(pageToken=nextPageToken)
-            # print("new response:", response)
             all_response.append(response)
+
             nextPageToken = response.get("nextPageToken")
-            # print("Current count:", count)
-#             print("nextPageToken: {}".format(nextPageToken))
-            # bar.update()
             count += 1
-        
-        # all_response = flatten_chain([i["items"] for i in all_response])
-        # bar.set_description("{} items obtained.".format(len(all_response)))
-        # bar.close()
         
         return all_response
     
     def run_pipe(self, items_only=True) -> list[dict] | None:
         """call API and return list of items"""
-        # print("run_pipe() is called")
         if self.retrieval == "head":
             response = self._get_response()
             return response.get("items") if items_only else response
@@ -109,7 +92,6 @@ class IterablePipe:
             all_items = list()
             for response in all_response:
                 all_items.extend(response.get("items"))
-            # all_items = [response.get("items") for response in all_response]
             return all_items if items_only else all_response
     
 

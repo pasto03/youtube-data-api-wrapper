@@ -5,5 +5,6 @@ from .search import SearchForeman
 from .videos import VideosForeman
 from .video_categories import VideoCategoriesForeman
 from .captions import CaptionsForeman
+from .comment_threads import CommentThreadsForeman
 
 from ..retriever.base import PipeSettings

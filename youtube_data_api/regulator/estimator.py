@@ -55,12 +55,12 @@ class UniqueEstimator(BaseEstimator):
 
 class ChannelsEstimator(UniqueEstimator):
     def __init__(self):
-        super().__init__(cost_per_call=1, batch_size=50)
+        super().__init__()
 
 
 class VideosEstimator(UniqueEstimator):
     def __init__(self):
-        super().__init__(cost_per_call=1, batch_size=50)
+        super().__init__()
 
     
 class IterableEstimator(BaseEstimator):
@@ -75,31 +75,31 @@ class IterableEstimator(BaseEstimator):
 
     As actual pages is unknown, the actual cost may be lower than estimated cost
     """
-    def __init__(self, cost_per_call=1, max_pages=5):
+    def __init__(self, cost_per_call=1):
         super().__init__(cost_per_call)
-        self.max_pages = max_pages
 
     def estimate(self, n_items: int, settings: PipeSettings):
         retrieval = settings.retrieval
-        pages = self.max_pages if retrieval == "all" else 1
+        max_pages = settings.max_page
+        pages = max_pages if retrieval == "all" else 1
         return n_items * pages * self.cost_per_call
     
 
 class PlaylistItemsEstimator(IterableEstimator):
-    def __init__(self, max_pages=5):
-        super().__init__(cost_per_call=1, max_pages=max_pages)
+    def __init__(self):
+        super().__init__(cost_per_call=1)
 
 
 class PlaylistEstimator(IterableEstimator):
-    def __init__(self, max_pages=5):
-        super().__init__(cost_per_call=1, max_pages=max_pages)
+    def __init__(self):
+        super().__init__(cost_per_call=1)
 
 
 class SearchEstimator(IterableEstimator):
-    def __init__(self, max_pages=5):
-        super().__init__(cost_per_call=100, max_pages=max_pages)
+    def __init__(self):
+        super().__init__(cost_per_call=100)
 
 
 class CommentThreadsEstimator(IterableEstimator):
-    def __init__(self, max_pages=5):
-        super().__init__(cost_per_call=1, max_pages=max_pages)
+    def __init__(self):
+        super().__init__(cost_per_call=1)

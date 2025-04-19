@@ -9,8 +9,8 @@ class CommentThreadsShipper(BaseShipper):
     def __init__(self):
         super().__init__()
         self.main_records = None    # comment_threads and replies are used to save data instead
-        self.comment_threads = list[dict] = list()
-        self.replies = dict[str, list] = dict()
+        self.comment_threads: list[dict] = list()
+        self.replies: dict[str, list] = dict()
         self.output_folder = "backup/CommentThreadsShipper"
     
     def invoke(self, items: list[CommentThreadsItem], output_folder=None, backup=True) -> None:
@@ -36,8 +36,6 @@ class CommentThreadsShipper(BaseShipper):
         snippet_item = asdict(item.snippet)
         top_level_comment_item = snippet_item.pop("topLevelComment")
 
-        record.update(snippet_item)
-
         record.update(self._extract_comment(deepcopy(top_level_comment_item)))
 
         self.comment_threads.append(record)
@@ -46,7 +44,7 @@ class CommentThreadsShipper(BaseShipper):
         replies = item.replies
         if replies:
             comment_replies = replies.comments
-            comment_replies_items = asdict(comment_replies)
+            comment_replies_items = [asdict(rep) for rep in comment_replies]
             # store comment replies of a parent comment id
             self.replies[item.id] = self._extract_comment_replies(deepcopy(comment_replies_items))
 
@@ -54,10 +52,15 @@ class CommentThreadsShipper(BaseShipper):
     def _extract_comment(raw_comment_item: dict) -> dict:
         comment_item = dict()
 
-        author_channel_id_item = raw_comment_item.pop("authorChannelId")
+        comment_snippet_item = raw_comment_item.pop("snippet")
+
+        author_channel_id_item = comment_snippet_item.pop("authorChannelId")
+
         comment_item.update(raw_comment_item)
 
-        comment_item["authorChannelId"] = author_channel_id_item["value"]
+        comment_item.update(comment_snippet_item)
+
+        comment_item.update(author_channel_id_item)
 
         return deepcopy(comment_item)
     
