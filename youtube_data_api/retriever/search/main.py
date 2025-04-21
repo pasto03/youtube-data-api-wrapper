@@ -40,4 +40,5 @@ class SearchRetriever(IterableRetriever):
     
     def invoke(self, output_folder="backup/SearchRetriever", 
            filename=None, backup=True) -> list[dict]:
+        # print("settings inside SearchRetriever:", self.settings)
         return super().invoke(output_folder=output_folder, filename=filename, backup=backup)

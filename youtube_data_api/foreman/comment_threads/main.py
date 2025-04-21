@@ -15,7 +15,14 @@ class CommentThreadsForeman(IterableForeman):
         self.retriever = CommentThreadsRetriever
         self.container = CommentThreadsContainer
         self.shipper = CommentThreadsShipper
+        self.name = "comment_threads"
+
+    def _pack(self, raw_items: list[dict]) -> CommentThreadsContainer:
+        return super()._pack(raw_items)
+    
+    def _ship(self, box: CommentThreadsContainer, backup=True) -> CommentThreadsShipper:
+        return super()._ship(box, backup)
     
     def invoke(self, iterable: list[str], developerKey: str, 
-               settings: PipeSettings = PipeSettings(), backup=True) -> CommentThreadsShipper:
-        return super().invoke(iterable=iterable, developerKey=developerKey, settings=settings, backup=backup)
+               settings: PipeSettings = PipeSettings(), backup=True, as_box=False) -> CommentThreadsShipper | CommentThreadsContainer:
+        return super().invoke(iterable=iterable, developerKey=developerKey, settings=settings, backup=backup, as_box=as_box)

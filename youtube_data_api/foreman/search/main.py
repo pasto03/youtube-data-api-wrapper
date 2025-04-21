@@ -5,28 +5,31 @@ from youtube_data_api.shipper import SearchShipper
 from youtube_data_api.retriever.base import PipeSettings
 from youtube_data_api.retriever.search.params import SearchTypeCheckboxProps, SearchParamProps
 
+from youtube_data_api.foreman.base import IterableForeman
 
-class SearchForeman:
+
+class SearchForeman(IterableForeman):
     """
     Retrieve search details given a list of SearchParamProps and convert to 1D dict.
     """
-    def __init__(self):
-        self._page_info = None
+    def __init__(self, types: SearchTypeCheckboxProps):
+        super().__init__()
+        self.retriever = SearchRetriever
+        self.container = SearchContainer
+        self.shipper = SearchShipper
+        self.name = "search"
 
-    def invoke(self, iterable: list[SearchParamProps], developerKey: str, 
-               types: SearchTypeCheckboxProps = SearchTypeCheckboxProps(),
-               settings: PipeSettings = PipeSettings(), backup=True) -> SearchShipper:
-        # 1. retrieve raw items
-        worker = SearchRetriever(iterable=iterable, developerKey=developerKey, types=types, settings=settings)
-        raw_items = worker.invoke(backup=backup)
+        self.types = types
 
-        # print(worker._page_info)
-        self._page_info = worker._page_info
+    def _retrieve(self, iterable, developerKey, settings, backup=True) -> list[dict]:
+        worker = self.retriever(iterable=iterable, developerKey=developerKey, types=self.types, settings=settings)
+        return worker.invoke(backup=backup)
 
-        # 2. box raw items
-        box = SearchContainer(raw_items)
+    def _pack(self, raw_items) -> SearchContainer:
+        return super()._pack(raw_items)
+    
+    def _ship(self, box, backup=True) -> SearchShipper:
+        return super()._ship(box, backup)
 
-        # 3. pack boxes
-        shipper = SearchShipper()
-        shipper.invoke(box.items, backup=backup)
-        return shipper
+    def invoke(self, iterable, developerKey, settings: PipeSettings = PipeSettings(), backup=True, as_box=False) -> SearchShipper | SearchContainer:
+        return super().invoke(iterable, developerKey=developerKey, settings=settings, backup=backup, as_box=as_box)

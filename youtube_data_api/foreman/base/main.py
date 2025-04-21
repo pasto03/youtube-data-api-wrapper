@@ -14,18 +14,32 @@ class UniqueForeman:
         self.retriever = UniqueRetriever
         self.container = BaseContainer
         self.shipper = BaseShipper
+        self.name = "unique"
 
-    def invoke(self, iterable: list[str], developerKey: str, backup=True) -> BaseShipper:
-        # 1. retrieve raw items
+    def _retrieve(self, iterable: list[str], developerKey: str, backup=True) -> list[dict]:
         worker = self.retriever(iterable=iterable, developerKey=developerKey)
-        raw_items = worker.invoke(backup=backup)
-
-        # 2. box raw items
-        box = self.container(raw_items)
-
-        # 3. pack boxes
+        return worker.invoke(backup=backup)
+    
+    def _pack(self, raw_items: list[dict]) -> BaseContainer:
+        return self.container(raw_items)
+    
+    def _ship(self, box: BaseContainer, backup=True) -> BaseShipper:
         shipper = self.shipper()
         shipper.invoke(box.items, backup=backup)
+        return shipper
+
+    def invoke(self, iterable: list[str], developerKey: str, backup=True, as_box=False) -> BaseShipper | BaseContainer:
+        # 1. retrieve raw items
+        raw_items = self._retrieve(iterable, developerKey=developerKey, backup=backup)
+
+        # 2. box raw items
+        box = self._pack(raw_items)
+
+        if as_box:
+            return box
+
+        # 3. pack boxes
+        shipper = self._ship(box, backup=backup)
         return shipper
     
 
@@ -37,17 +51,31 @@ class IterableForeman:
         self.retriever = IterableRetriever
         self.container = BaseContainer
         self.shipper = BaseShipper
+        self.name = "iterable"
 
-    def invoke(self, iterable: list[str], developerKey: str, 
-               settings: PipeSettings = PipeSettings, backup=True) -> BaseShipper:
-        # 1. retrieve raw items
+    def _retrieve(self, iterable: list[str], developerKey: str, settings: PipeSettings, backup=True) -> list[dict]:
         worker = self.retriever(iterable=iterable, developerKey=developerKey, settings=settings)
-        raw_items = worker.invoke(backup=backup)
-
-        # 2. box raw items
-        box = self.container(raw_items)
-
-        # 3. pack boxes
+        return worker.invoke(backup=backup)
+    
+    def _pack(self, raw_items: list[dict]) -> BaseContainer:
+        return self.container(raw_items)
+    
+    def _ship(self, box: BaseContainer, backup=True) -> BaseShipper:
         shipper = self.shipper()
         shipper.invoke(box.items, backup=backup)
+        return shipper
+
+    def invoke(self, iterable: list[str], developerKey: str, 
+               settings: PipeSettings = PipeSettings(), backup=True, as_box=False) -> BaseShipper | BaseContainer:
+        # 1. retrieve raw items
+        raw_items = self._retrieve(iterable, developerKey=developerKey, settings=settings, backup=backup)
+
+        # 2. box raw items
+        box = self._pack(raw_items)
+
+        if as_box:
+            return box
+
+        # 3. pack boxes
+        shipper = self._ship(box, backup=backup)
         return shipper

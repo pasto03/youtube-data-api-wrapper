@@ -63,8 +63,9 @@ class PlaylistItemsContainer(BaseContainer):
 
         # remove redundant
         raw_snippet.pop("resourceId")
-        raw_snippet.pop("videoOwnerChannelTitle")
-        raw_snippet.pop("videoOwnerChannelId")
+        if raw_snippet.get("videoOwnerChannelTitle"):
+            raw_snippet.pop("videoOwnerChannelTitle")
+            raw_snippet.pop("videoOwnerChannelId")
 
         snippet = PlaylistItemsSnippet(**raw_snippet)
         snippet.thumbnails = self._extract_thumbnail(thumbnails_item)

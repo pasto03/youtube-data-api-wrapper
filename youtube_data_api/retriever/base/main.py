@@ -29,53 +29,10 @@ class IterableRetriever:
     def _create_params(self, i):
         return BaseParams(part='snippet')
     
-    # multithreading
-    def _invoke(self, output_folder="backup/IterableRetriever", 
-           filename=None, backup=True) -> list[dict]:
-        raw_items = []
-
-        total = len(self.iterable)
-        width = 3   # width of formatted text
-        bar = tqdm(total=total)
-
-        def worker(i):
-            params = self._create_params(i)
-            pipe = self.pipe(params, self.pipe_fn, self.settings)
-            items = pipe.run_pipe()
-            return items, pipe._page_info
-
-        futures = []
-        with ThreadPoolExecutor(max_workers=2) as executor:
-            for i in self.iterable:
-                futures.append(executor.submit(worker, i))
-
-            for future in as_completed(futures):
-                try:
-                    items, page_info = future.result()
-                    if items:
-                        raw_items.extend(items)
-                    self._page_info = page_info  # may overwrite many times
-                except Exception as e:
-                    print(f"Error during pipe processing: {e}")
-                bar.update()
-                count = bar.n
-                bar.set_description("{:^{}s} / {:^{}s} batch(s) retrieved.".format(str(count), width, str(total), width))
-
-        bar.close()
-
-        if backup:
-            if not os.path.exists(output_folder):
-                os.makedirs(output_folder)
-            if not filename:
-                filename = get_current_time() + ".json"
-            records = dict_to_json(raw_items)
-            with open(os.path.join(output_folder, filename), "wb") as f:
-                f.write(records.encode("utf-8"))
-
-        return raw_items
-        
     def invoke(self, output_folder="backup/IterableRetriever", 
                filename=None, backup=True) -> list[dict]:
+        
+        # print("settings inside IterableRetriever().invoke():", self.settings)
         raw_items = []
         
         count = 0
@@ -85,8 +42,8 @@ class IterableRetriever:
 
         for i in self.iterable:
             params = self._create_params(i)
-            # print(params)
-            pipe = self.pipe(params, self.pipe_fn, self.settings)
+            # print("Settings passed to params:", self.settings)
+            pipe = self.pipe(params, pipe_fn=self.pipe_fn, settings=self.settings)
             items = pipe.run_pipe()
 
             self._page_info = pipe._page_info

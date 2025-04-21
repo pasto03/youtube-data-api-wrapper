@@ -14,6 +14,13 @@ class ChannelsForeman(UniqueForeman):
         self.retriever = ChannelsRetriever
         self.container = ChannelsContainer
         self.shipper = ChannelShipper
+        self.name = "channels"
 
-    def invoke(self, iterable: list[str], developerKey: str, backup=True) -> ChannelShipper:
-        return super().invoke(iterable=iterable, developerKey=developerKey, backup=backup)
+    def _pack(self, raw_items) -> ChannelsContainer:
+        return super()._pack(raw_items)
+    
+    def _ship(self, box, backup=True) -> ChannelShipper:
+        return super()._ship(box, backup)
+
+    def invoke(self, iterable: list[str], developerKey: str, backup=True, as_box=False) -> ChannelShipper | ChannelsContainer:
+        return super().invoke(iterable=iterable, developerKey=developerKey, backup=backup, as_box=as_box)

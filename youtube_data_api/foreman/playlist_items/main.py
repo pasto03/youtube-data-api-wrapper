@@ -15,7 +15,14 @@ class PlaylistItemsForeman(IterableForeman):
         self.retriever = PlaylistItemsRetriever
         self.container = PlaylistItemsContainer
         self.shipper = PlaylistItemShipper
+        self.name = "playlist_items"
+
+    def _pack(self, raw_items) -> PlaylistItemsContainer:
+        return super()._pack(raw_items)
+    
+    def _ship(self, box, backup=True) -> PlaylistItemShipper:
+        return super()._ship(box, backup)
     
     def invoke(self, iterable: list[str], developerKey: str, 
-               settings: PipeSettings = PipeSettings(), backup=True) -> PlaylistItemShipper:
-        return super().invoke(iterable=iterable, developerKey=developerKey, settings=settings, backup=backup)
+               settings: PipeSettings = PipeSettings(), backup=True, as_box=False) -> PlaylistItemShipper | PlaylistItemsContainer:
+        return super().invoke(iterable=iterable, developerKey=developerKey, settings=settings, backup=backup, as_box=as_box)

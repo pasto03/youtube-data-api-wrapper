@@ -20,6 +20,9 @@ class IterablePipe:
         self.n = settings.n   # only valid when retrieval set to "custom"
         self.max_page = settings.max_page
 
+        # print("settings received upon initialization:", settings)
+        self.settings = settings
+
         self.hard_limit = 50
         
         # will be assigned a value when _get_all_response() is called
@@ -31,6 +34,8 @@ class IterablePipe:
         
         self.params.pageToken = pageToken
         self.params.maxResults = self.hard_limit if not n else n
+
+        # print("Params inside _get_response(): {}".format(self.params))
 
         request = self.pipe_fn.list(**self.params.to_dict())
         response = request.execute()
@@ -75,6 +80,7 @@ class IterablePipe:
     
     def run_pipe(self, items_only=True) -> list[dict] | None:
         """call API and return list of items"""
+        # print("settings inside run_pipe():", self.settings)
         if self.retrieval == "head":
             response = self._get_response()
             return response.get("items") if items_only else response
@@ -83,6 +89,7 @@ class IterablePipe:
             n = self.n
             assert n > 0 and type(n) == int, "only positive integer allowed"
             n = min(n, self.hard_limit)
+            # print("inside custom retrieval")
             response = self._get_response(n=n)
             return response.get("items") if items_only else response
         

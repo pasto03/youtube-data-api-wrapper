@@ -14,6 +14,13 @@ class VideosForeman(UniqueForeman):
         self.retriever = VideosRetriever
         self.container = VideosContainer
         self.shipper = VideoShipper
+        self.name = "videos"
 
-    def invoke(self, iterable: list[str], developerKey: str, backup=True) -> VideoShipper:
-        return super().invoke(iterable=iterable, developerKey=developerKey, backup=backup)
+    def _pack(self, raw_items) -> VideosContainer:
+        return super()._pack(raw_items)
+    
+    def _ship(self, box, backup=True) -> VideoShipper:
+        return super()._ship(box, backup)
+
+    def invoke(self, iterable: list[str], developerKey: str, backup=True, as_box=False) -> VideoShipper | VideosContainer:
+        return super().invoke(iterable=iterable, developerKey=developerKey, backup=backup, as_box=as_box)

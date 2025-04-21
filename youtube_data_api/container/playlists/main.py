@@ -13,6 +13,7 @@ class PlaylistSnippet:
     description: str = None
     thumbnails: list[ItemThumbnail] = None
     channelTitle: str = None
+    defaultLanguage: str = None
         
 @dataclass
 class PlaylistContentDetails:

@@ -20,6 +20,9 @@ class CommentThreadsShipper(BaseShipper):
         # return super().invoke(items=items, output_folder=output_folder, backup=backup)
         for item in items:
             self._extract_details(item)
+
+        # set comment_threads as the main_records of this shipper
+        self.main_records = deepcopy(self.comment_threads)
             
         if backup:
             self._handle_backup(self.comment_threads, suffix=" comment threads", output_folder=output_folder)

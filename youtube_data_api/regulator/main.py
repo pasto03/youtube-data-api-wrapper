@@ -1,7 +1,6 @@
 from youtube_data_api.retriever.base import UniqueRetriever, IterableRetriever
 from youtube_data_api.regulator.estimator import UniqueEstimator, IterableEstimator, SearchEstimator
 
-
 class UniqueRegulator:
     HARD_LIMIT = 10000    # any request shall not exceed this quota cost
 
@@ -21,7 +20,7 @@ class UniqueRegulator:
 
         print("Estimated quota usage: {}.".format(cost))
 
-        if cost >= self.HARD_LIMIT and not bypass_regulation:
+        if cost > self.HARD_LIMIT and not bypass_regulation:
             print("The request would exceed daily maximum quota cost ({}) if proceed. API call aborted for usage concern. Set bypass_regulation=True to bypass the abortion procedure.".format(self.HARD_LIMIT))
 
             return
