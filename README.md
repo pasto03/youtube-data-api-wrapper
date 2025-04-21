@@ -100,7 +100,6 @@ def example1():
 pip install git+https://github.com/pasto03/youtube-data-api-wrapper.git
 ```
 
-(或使用 `pip install .` 安装本地版本)
 
 ---
 
