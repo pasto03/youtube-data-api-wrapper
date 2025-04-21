@@ -1,3 +1,6 @@
+"""
+retrieve channel details given channelId
+"""
 from youtube_data_api.foreman import ChannelsForeman
 
 

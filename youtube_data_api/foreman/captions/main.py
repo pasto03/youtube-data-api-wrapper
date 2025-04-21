@@ -1,3 +1,7 @@
+"""
+Note: this foreman may be removed in the future
+"""
+
 from youtube_data_api.retriever import CaptionsRetriever
 from youtube_data_api.retriever.captions.params import CaptionsParams
 

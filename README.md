@@ -1,62 +1,126 @@
-# YouTube Data API Wrapper
+# youtube-data-api-wrapper
 
-<img src="Introductions.png" alt="Introduction of this wrapper">
+A developer-friendly wrapper for the YouTube Data API v3, designed to simplify video, channel, playlist retrieval and enable pipeline-style data workflows.
 
-<i>Introduction to the wrapper</i>
+---
 
+## 🚀 Quickstart
 
-## Get Started
-Install this repo:
-```
-pip install git+https://github.com/pasto03/youtube-data-api-wrapper.git
-```
-
-
-## Usage
-For example, you want to obtain all channel details given a list of channelIds:
-
-(Refer to <a href="./examples/foreman/1 channelsForeman.py"> here</a>)
+Retrieve video details given a list of `videoIds`:
 
 ```python
-from youtube_data_api.foreman import ChannelsForeman
+from youtube_data_api.foreman import VideosForeman
 
+videoIds = ["id1", "id2", ...]
+foreman = VideosForeman()
 
-# others foreman follow same procedure
-channelIds = ["id1", "id2", ...]
-foreman = ChannelsForeman()
-shipper = foreman.invoke(iterable=channelIds, developerKey="YOUR DEV KEY")
+# Invoke the foreman
+shipper = foreman.invoke(iterable=videoIds, developerKey="YOUR_DEV_KEY")
 
-# flattened records
+# Access structured output
 records = shipper.main_records
 thumbnails = shipper.thumbnails
 ```
 
-&nbsp;
+All other `Foreman` types follow the same invocation structure.
 
-Or you want to obtain channel details from given channel names(keywords):
+---
 
-(Refer to <a href="./examples/foreman/2 composite.py"> here</a>)
+## 🔍 Search with `SearchForeman`
+
+Search for videos, playlists, or channels by keyword:
+
 ```python
-from youtube_data_api.foreman import SearchForeman, ChannelsForeman
-from youtube_data_api.container import SearchContainer
-from youtube_data_api.retriever.search.params import SearchTypeCheckboxProps
+from youtube_data_api.foreman import SearchForeman
+from youtube_data_api.retriever.base import PipeSettings
+from youtube_data_api.retriever.search import SearchTypeCheckboxProps, SearchParamProps
 
+# Initialize search types (channel, playlist, video)
+foreman = SearchForeman(types=SearchTypeCheckboxProps(channel=True, playlist=True, video=True))
 
-developerKey = "YOUR DEV KEY"
+# Run search with custom settings
+shipper = foreman.invoke(
+    iterable=[SearchParamProps(q="Bruno Mars", order="viewCount")],
+    developerKey="YOUR_DEV_KEY",
+    settings=PipeSettings(retrieval="all", max_page=5)
+)
 
-# 1. obtain corresponding channelIds
-keywords = ["k1", "k2", ...]
-types = SearchTypeCheckboxProps(channel=True, playlist=False, video=False)   # we want channel results only
-foreman1 = SearchForeman()
-shipper1 = foreman1.invoke(iterable=keywords, developerKey=developerKey, types=types)
-records1 = shipper1.main_records
-
-
-# 2. obtain channel details
-channelIds = [i['channelId'] for i in records1]   # check key from corresponding container object
-foreman2 = ChannelsForeman()
-shipper2 = foreman2.invoke(iterable=channelIds, developerKey=developerKey)
-
-# final outputs here
-records2 = shipper2.main_records
+records = shipper.main_records
 ```
+
+📄 Complete example: [`examples/foreman/5 SearchForeman.py`](examples/foreman/5%20SearchForeman.py)
+
+---
+
+## 🔧 Build Custom Pipelines
+
+Chain multiple retrieval steps (e.g., search → fetch video details):
+
+```python
+def example1():
+    from youtube_data_api.pipeline import Pipeline, PipelineBlock, PipelineStacks
+    from youtube_data_api.foreman import SearchForeman, VideosForeman
+    from youtube_data_api.retriever.base import PipeSettings
+    from youtube_data_api.retriever.search import SearchParamProps, SearchTypeCheckboxProps
+
+    blocks = [
+        PipelineBlock(
+            is_initial=True,
+            foreman=SearchForeman(types=SearchTypeCheckboxProps(video=True)),
+            settings=PipeSettings(retrieval="head"),
+            save_output=True
+        ),
+        PipelineBlock(
+            inputvar_name="videoId",
+            foreman=VideosForeman(),
+            save_output=True
+        )
+    ]
+
+    stacks = PipelineStacks(
+        initial_input=[SearchParamProps(q="Bruno Mars", order="viewCount")],
+        blocks=blocks,
+        backup=True
+    )
+
+    pipeline = Pipeline(stacks, developerKey="YOUR_DEV_KEY")
+    dlv = pipeline.invoke()
+
+    # Save result
+    dlv.to_json("OUTPUT.json")
+```
+
+📄 Complete example: [`examples/pipeline/example.py`](examples/pipeline/example.py)
+
+---
+
+## 📦 Installation
+
+```bash
+pip install git+https://github.com/pasto03/youtube-data-api-wrapper.git
+```
+
+(或使用 `pip install .` 安装本地版本)
+
+---
+
+## 📚 Documentation
+
+Coming soon! For now, explore the `examples/` folder for usage references.
+
+---
+
+## 🛠️ Features
+
+- Unified invocation interface for all foreman types
+- Dataclass-based inputs and outputs
+- Pipeline composition and modularity
+- JSON export-ready results
+
+---
+
+## 📜 License
+
+MIT License.
+
+---

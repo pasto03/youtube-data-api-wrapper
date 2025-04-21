@@ -13,8 +13,9 @@ class PipeSettings:
         retrieval (RetrieveMethod): 
             - head: only retrieve n items for first page where n=50
             - custom: only retrieve n items for first page where n=n
-            - all: retrieve 5 pages of items(capped to avoid quota overuse)
+            - all: retrieve max_page of items
         n(int): effective when retrieval="custom"
+        mx_page(int): no. of pages to retrieve
     """
     retrieval: RetrieveMethod = "all"
     n: int = 50
