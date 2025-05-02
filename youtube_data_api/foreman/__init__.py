@@ -1,3 +1,5 @@
+__all__ = ["ChannelsForeman", "PlaylistItemsForeman", "PlaylistsForeman", "SearchForeman", "VideosForeman", "VideoCategoriesForeman", "CaptionsForeman", "CommentThreadsForeman", "PipeSettings"]
+
 from .channels import ChannelsForeman
 from .playlist_items import PlaylistItemsForeman
 from .playlists import PlaylistsForeman

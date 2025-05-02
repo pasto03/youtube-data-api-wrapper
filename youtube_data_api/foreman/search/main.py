@@ -31,5 +31,5 @@ class SearchForeman(IterableForeman):
     def _ship(self, box, backup=True) -> SearchShipper:
         return super()._ship(box, backup)
 
-    def invoke(self, iterable, developerKey, settings: PipeSettings = PipeSettings(), backup=True, as_box=False) -> SearchShipper | SearchContainer:
+    def invoke(self, iterable: list[SearchParamProps], developerKey, settings: PipeSettings = PipeSettings(), backup=True, as_box=False) -> SearchShipper | SearchContainer:
         return super().invoke(iterable, developerKey=developerKey, settings=settings, backup=backup, as_box=as_box)
