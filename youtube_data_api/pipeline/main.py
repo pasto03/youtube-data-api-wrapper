@@ -1,17 +1,17 @@
-from dataclasses import dataclass, field, asdict
-from typing import Literal, Optional, List
-import json
+"""
+a pipeline with allows muitiple steps of data retrieval
+"""
 import time
+import json
+from typing import Literal, Optional, List
+from dataclasses import dataclass, asdict, field
 
+from youtube_data_api.container.videos.main import VideoItem
+from youtube_data_api.container.search.main import SearchItem
 from youtube_data_api.retriever.search import SearchParamProps
 from youtube_data_api.retriever.base import PipeSettings
 from youtube_data_api.foreman.base import IterableForeman, UniqueForeman
-from youtube_data_api.foreman import CaptionsForeman
-
-from youtube_data_api.container.base import BaseItem
-from youtube_data_api.container.search.main import SearchItem
-from youtube_data_api.container.playlist_items.main import PlaylistItemsItem
-
+from youtube_data_api.foreman import *
 
 
 @dataclass
@@ -20,17 +20,12 @@ class PipelineBlock:
     Represents a single block in a data processing pipeline.
 
     Attributes:
-        is_initial (bool): Indicates whether this block is the first in the pipeline.
-        inputvar_name (Optional[Literal["channelId", "videoId", "playlistId", "id"]]):
-            The attribute name of the previous block's output that this block depends on.
         foreman (IterableForeman | UniqueForeman):
             The foreman instance responsible for executing this block's task.
         settings (Optional[PipeSettings]):
             Configuration specific to the foreman. Only applicable for IterableForeman.
         save_output (bool): Whether to include this block's output in the final PipelineDeliverable.
     """
-    is_initial: bool = False
-    inputvar_name: Optional[Literal["channelId", "videoId", "playlistId", "id"]] = None
     foreman: IterableForeman | UniqueForeman = None
     settings: Optional[PipeSettings] = None
     save_output: bool = False
@@ -54,6 +49,53 @@ class PipelineStacks:
     backup: bool = True
 
 
+foreman_map: dict[str, UniqueForeman | IterableForeman] = {
+            "videos": VideosForeman,
+            "channels": ChannelsForeman,
+            "search": SearchForeman,
+            "playlists": PlaylistsForeman,
+            "playlist_items": PlaylistItemsForeman,
+            "comments": CommentThreadsForeman,
+            "captions": CaptionsForeman
+}
+reverse_foreman_map: dict[UniqueForeman | IterableForeman, str] = {v: k for k, v in foreman_map.items()}
+
+# worker = CaptionsForeman()
+# print(reverse_foreman_map)
+# print(reverse_foreman_map[type(worker)])
+
+# example: available blocks for videos: videos -> comments | videos -> captions
+available_block_map = {
+    "videos": ["comments", "captions"],
+    "channels": ["playlists"],
+    "search": ["videos", "channels", "playlists"],
+    "playlists": ["playlist_items"],
+    "playlist_items": ["videos"]
+}
+
+# function to extract current block output key id as next block input; eg. videos (video["id"]) -> comments
+block_access_func_map = {
+    "videos": {
+        "comments": lambda x: x.id,
+        "captions": lambda x: x.id
+    },
+    "channels": {
+        "playlists": lambda x: x.id
+    },
+    "search": {
+        "videos": lambda x: x.id.videoId,
+        "channels": lambda x: x.id.channelId,
+        "playlists": lambda x: x.id.playlistId
+    },
+    "playlists": {
+        "playlist_items": lambda x: x.id
+    },
+    "playlist_items": {
+        "videos": lambda x: x.contentDetails.videoId
+    }
+}
+
+
 @dataclass
 class PipelineProduct:
     title: str = None
@@ -68,35 +110,12 @@ class PipelineDeliverable:
         with open(output_path, "wb") as f:
             f.write(json.dumps(asdict(self), indent=4, ensure_ascii=False).encode("utf-8"))
 
+
+@dataclass
 class Pipeline:
     def __init__(self, stacks: PipelineStacks, developerKey: str):
         self.stacks = stacks
         self.developerKey = developerKey
-
-    @staticmethod
-    def _extract_iterable(items: list[BaseItem], inputvar_name: Literal["channelId", "videoId", "playlistId"] | str):
-        # print("inputvar_name:", inputvar_name)
-        # print("First item: ", items[0])
-        if isinstance(items[0], SearchItem):
-            match inputvar_name:
-                case "channelId":
-                    get_item_id = lambda item: item.id.channelId
-                case "videoId":
-                    get_item_id = lambda item: item.id.videoId
-                case "playlistId":
-                    get_item_id = lambda item: item.id.playlistId
-
-            # print("Inside SearchItem extraction.")
-            return [get_item_id(item) for item in items]
-        
-        if isinstance(items[0], PlaylistItemsItem):
-            if inputvar_name == "videoId":
-                return [item.contentDetails.videoId for item in items]
-        
-        if not hasattr(items[0], inputvar_name):
-            raise AttributeError("Output box items does not contain required input variable of next block. (inputvar_name: {})".format(inputvar_name))
-        
-        return [getattr(item, inputvar_name) for item in items]
 
     def invoke(self) -> PipelineDeliverable | None:
         start = time.time()
@@ -125,13 +144,9 @@ class Pipeline:
                 print("Pipeline early ended due to empty items retrieved. (block: {})".format(block))
                 return
             
-            # iterable = _extract_iterable(box.items, inputvar_name="id")
-            # print("DEBUG: iterable:", iterable)
+            # print("items:", items[:5])
 
             print("{} item(s) retrieved.".format(len(items)))
-
-            # if block_count == 0:
-            #     print("first output items:", items)
             
             # if current block is the last block, return final output
             if block_count + 1  == len(blocks):
@@ -152,8 +167,39 @@ class Pipeline:
                 dlv.products.append(product)
             
             next_block = blocks[block_count + 1]
-            assert next_block.inputvar_name, "inputvar_name for the block is not specified. (block: {})".format(next_block)
+            next_foreman_name = reverse_foreman_map[type(next_block.foreman)]
             
-            iterable = self._extract_iterable(items, inputvar_name=next_block.inputvar_name)
+            # print(items[:3])
+            # extract iterable for next block
+            current_foreman_name = reverse_foreman_map[type(block.foreman)]
+            extractor_function = block_access_func_map[current_foreman_name][next_foreman_name]
+            # print("current_foreman_name:", current_foreman_name)
+            # print("next_foreman_name:", next_foreman_name)
+            # special case for "videos"; to handle the condition where video comment section is disabled
+            if current_foreman_name == "videos":
+                # print("is videos")
+                iterable = list()
+                
+                items: list[VideoItem]
+                for i in items:
+                    if i.statistics.commentCount == "0":
+                        # print(i.id)
+                        continue
+                    else:
+                        iterable.append(i.id)
+
+            # an "interesting" bug (or feature?) of YouTube Data API even search types specified as "video", "channel" result can occur
+            elif current_foreman_name == "search" and next_foreman_name == "videos":
+                iterable = list()
+
+                items: list[SearchItem]
+                for i in items:
+                    # print(i.id)
+                    if i.id.kind == "youtube#video":
+                        # print(i.id)
+                        iterable.append(i.id.videoId)
+                
+            else:
+                iterable = [extractor_function(i) for i in items]
 
             block_count += 1

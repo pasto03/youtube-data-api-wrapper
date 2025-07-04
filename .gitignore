@@ -1,6 +1,10 @@
 __pycache__
+
 TEST.py
 backup
-/tests
+
+/tests_v1_0
+/tests_v1_1
+
 /debugs
 *.excalidraw

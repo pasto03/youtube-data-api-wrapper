@@ -1,15 +1,15 @@
-from typing import Optional, List
+from typing import Optional
 
 from youtube_data_api.retriever.base import PipeSettings
 from youtube_data_api.foreman.base import IterableForeman, UniqueForeman
-from youtube_data_api.pipeline import Pipeline, PipelineDeliverable
 
-from .estimator import ChannelsEstimator, VideosEstimator, PlaylistEstimator, SearchEstimator, PlaylistItemsEstimator, CommentThreadsEstimator, CaptionsEstimator
+from youtube_data_api.regulator.estimator import ChannelsEstimator, VideosEstimator, PlaylistEstimator, SearchEstimator, PlaylistItemsEstimator, CommentThreadsEstimator
+
+from .main import Pipeline
 
 
-@DeprecationWarning
-class PipelineRegulator:
-    HARD_LIMIT = 10000
+class PipelineEstimator:
+    # HARD_LIMIT = 10000
     def __init__(self, pipeline: Pipeline):
         self.pipeline = pipeline
 
@@ -30,7 +30,7 @@ class PipelineRegulator:
             case "search":
                 return SearchEstimator().estimate(n_items, settings, estimate_output_count=True)
 
-    def _estimate_total_cost(self):
+    def estimate(self):
         stacks = self.pipeline.stacks
         n_items = len(stacks.initial_input)
 
@@ -42,6 +42,8 @@ class PipelineRegulator:
             print("\nBlock {}: {}".format(idx, block))
             kwargs = {"settings": block.settings} if block.settings else {}
             result = self._estimate_block_cost(n_items, foreman=foreman, **kwargs)
+
+            print(f"{'Estimated input count :':<25} {n_items}")
 
             if isinstance(result, int):
                 cost = result
@@ -55,26 +57,6 @@ class PipelineRegulator:
 
             total_cost += cost
 
+        print(f"\n{'Total quota usage :':<25} {total_cost}")
+
         return total_cost
-        
-    def invoke(self, bypass_regulation=False, backup=True) -> PipelineDeliverable | None:
-        print("---API REGULATOR---")
-        # 1. estimate quota cost
-        cost = self._estimate_total_cost()
-
-        print("\nEstimated total quota usage: {}.".format(cost))
-
-        if cost > self.HARD_LIMIT and not bypass_regulation:
-            print("The request would exceed daily maximum quota cost ({}) if proceed. API call aborted for usage concern. Set bypass_regulation=True to bypass the abortion procedure.".format(self.HARD_LIMIT))
-
-            return
-        
-        to_proceed = input("Do you want to proceed? (Y/n)")
-
-        if not to_proceed.lower() == "y":
-            print("API call aborted.")
-            # print("---END OF API REGULATOR---")
-        
-        else:
-            # print("---END OF API REGULATOR---")
-            return self.pipeline.invoke()

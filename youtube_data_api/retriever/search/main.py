@@ -36,6 +36,8 @@ class SearchRetriever(IterableRetriever):
         self.pipe = SearchPipe
     
     def _create_params(self, i: SearchParamProps):
+        print("SearchRetriever()._create_params()")
+        print("self.types:", self.types)
         return SearchParams(**i.to_dict(), type=self.types.convert())
     
     def invoke(self, output_folder="backup/SearchRetriever", 
