@@ -4,7 +4,7 @@ import os
 
 setup(
     name="youtube_data_api",  # Name of the module
-    version="1.0.0",  # Version of your package
+    version="1.1.0",  # Version of your package
     description="a Python library that simplifies interactions with the YouTube Data API",
     author="Ben Law",
     author_email="chumaolaw@gmail.com",
