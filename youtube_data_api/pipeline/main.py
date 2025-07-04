@@ -182,7 +182,8 @@ class Pipeline:
                 
                 items: list[VideoItem]
                 for i in items:
-                    if i.statistics.commentCount == "0":
+                    # null commentCount means comment section is disabled 
+                    if i.statistics.commentCount is None:
                         # print(i.id)
                         continue
                     else:

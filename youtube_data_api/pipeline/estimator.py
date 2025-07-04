@@ -30,7 +30,7 @@ class PipelineEstimator:
             case "search":
                 return SearchEstimator().estimate(n_items, settings, estimate_output_count=True)
 
-    def estimate(self):
+    def estimate(self, verbose=0):
         stacks = self.pipeline.stacks
         n_items = len(stacks.initial_input)
 
@@ -39,11 +39,12 @@ class PipelineEstimator:
         for idx, block in enumerate(stacks.blocks):
             foreman = block.foreman
 
-            print("\nBlock {}: {}".format(idx, block))
+            if verbose: print("\nBlock {}: {}".format(idx, block))
+
             kwargs = {"settings": block.settings} if block.settings else {}
             result = self._estimate_block_cost(n_items, foreman=foreman, **kwargs)
 
-            print(f"{'Estimated input count :':<25} {n_items}")
+            if verbose: print(f"{'Estimated input count :':<25} {n_items}")
 
             if isinstance(result, int):
                 cost = result
@@ -52,11 +53,12 @@ class PipelineEstimator:
             else:
                 cost, n_items = result
             
-            print(f"{'Estimated output count :':<25} {n_items}")
-            print(f"{'Estimated quota usage  :':<25} {cost}")
+            if verbose:
+                print(f"{'Estimated output count :':<25} {n_items}")
+                print(f"{'Estimated quota usage  :':<25} {cost}")
 
             total_cost += cost
 
-        print(f"\n{'Total quota usage :':<25} {total_cost}")
+        if verbose: print(f"\n{'Total quota usage :':<25} {total_cost}")
 
         return total_cost
