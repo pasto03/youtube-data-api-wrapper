@@ -85,13 +85,18 @@ class IterableEstimator(BaseEstimator):
         pages = max_pages if retrieval == "all" else 1
         cost = n_items * pages * self.cost_per_call
 
-        print("input_items: {} | pages: {} | cost_per_call: {}".format(n_items, pages, self.cost_per_call))
+        # print("retrieval: {} | pages: {}".format(retrieval, pages))
 
+        # print("input_items: {} | pages: {} | cost_per_call: {}".format(n_items, pages, self.cost_per_call))
+
+        # output_count = for every input items, get their outputs -> n(input_items) of (n_pages * output_per_pages) outputs
         if estimate_output_count:
             if retrieval == "custom":
-                output_count = settings.n
+                output_count = n_items * settings.n
             else:
-                output_count = self.output_per_page * max_pages
+                output_count = n_items * (self.output_per_page * pages)
+
+            # print("cost: {} | output_count: {}".format(cost, output_count))
             return cost, output_count
         
         return cost
