@@ -1,10 +1,17 @@
 __pycache__
+.ipynb_checkpoints
 
 TEST.py
 backup
 
 /tests_v1_0
 /tests_v1_1
+/dev_tests
+/dev
 
 /debugs
 *.excalidraw
+documentations
+
+devKey
+explanation_draft.txt
