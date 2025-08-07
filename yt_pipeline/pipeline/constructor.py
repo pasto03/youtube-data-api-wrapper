@@ -73,7 +73,7 @@ class PipelineStacksConstructor:
             debug=debug
         )
     
-    def _validate_blocks(self, blocks: list[dict]):
+    def _validate_blocks(self, blocks: list[dict], verbose=0):
         """
         return None if ok, else raise TypeError
         """
@@ -95,8 +95,9 @@ class PipelineStacksConstructor:
             next_foreman_name = block["foreman"]
             available_next_blocks = available_block_map[foreman_name]
 
-            logging.info("Current connection: {} -> {}".format(foreman_name, next_foreman_name))
-            logging.info("Available next blocks for {}: {}".format(foreman_name, available_next_blocks))
+            if verbose:
+                logging.info("Current connection: {} -> {}".format(foreman_name, next_foreman_name))
+                logging.info("Available next blocks for {}: {}".format(foreman_name, available_next_blocks))
 
             if next_foreman_name not in available_next_blocks:
                 logging.error("{} cannot be connected to {}".format(next_foreman_name, foreman_name))
@@ -104,11 +105,11 @@ class PipelineStacksConstructor:
             
             foreman_name = next_foreman_name
     
-    def invoke(self, stacks_json: dict):
+    def invoke(self, stacks_json: dict, verbose=0):
         initial_input_json: list[str] | list[dict] = stacks_json["initial_input"]
         blocks = stacks_json["blocks"]
 
-        self._validate_blocks(blocks)
+        self._validate_blocks(blocks=blocks, verbose=verbose)
 
         first_foreman = blocks[0]["foreman"]
 

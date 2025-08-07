@@ -1,11 +1,12 @@
 from typing import Optional
+import logging
 
 from yt_pipeline.retriever.base import PipeSettings
 from yt_pipeline.foreman.base import IterableForeman, UniqueForeman
 
 from yt_pipeline.regulator.estimator import ChannelsEstimator, VideosEstimator, PlaylistEstimator, SearchEstimator, PlaylistItemsEstimator, CommentThreadsEstimator
 
-from .main import Pipeline
+from .main import Pipeline, reverse_foreman_map
 
 
 class PipelineEstimator:
@@ -37,17 +38,28 @@ class PipelineEstimator:
         stacks = self.pipeline.stacks
         n_items = len(stacks.initial_input)
 
+        report = dict()
+        report['overall_cost'] = 0
+        report['stages'] = list()
+
         total_cost = 0
 
         for idx, block in enumerate(stacks.blocks):
+            stage = dict()
+
             foreman = block.foreman
 
-            if verbose: print("\nBlock {}: {}".format(idx, block))
+            logging.debug("\nBlock {}: {}".format(idx, block))
 
-            kwargs = {"settings": block.settings} if block.settings else {}
+            if verbose:
+                logging.info("foreman: {}".format(reverse_foreman_map[type(foreman)]))
+                logging.info("")
+
+            kwargs = {"settings": block.pipe_settings} if block.pipe_settings else {}
             result = self._estimate_block_cost(n_items, foreman=foreman, **kwargs)
 
-            if verbose: print(f"{'Estimated input count :':<25} {n_items}")
+            if verbose: logging.info(f"{'Estimated input count  :':<25} {n_items}")
+            stage['input_count'] = n_items
 
             if isinstance(result, int):
                 cost = result
@@ -55,13 +67,23 @@ class PipelineEstimator:
                 # n_items = n_items
             else:
                 cost, n_items = result
-            
+
             if verbose:
-                print(f"{'Estimated output count :':<25} {n_items}")
-                print(f"{'Estimated quota usage  :':<25} {cost}")
+                logging.info(f"{'Estimated output count :':<25} {n_items}")
+                logging.info(f"{'Estimated quota usage  :':<25} {cost}")
+
+            stage['output_count'] = n_items
+            stage['quota_usage'] = cost
 
             total_cost += cost
 
-        if verbose: print(f"\n{'Total quota usage :':<25} {total_cost}")
+            if verbose: logging.info(f"{'Total quota usage :':<25} {total_cost}")
 
-        return total_cost
+            stage['staged_total_cost'] = total_cost
+
+            report['stages'].append(stage)
+        
+        logging.info(f"{'Overall estimated quota usage :':<25} {total_cost}")
+        report['overall_cost'] = total_cost
+
+        return report
