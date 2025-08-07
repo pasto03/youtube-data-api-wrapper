@@ -17,7 +17,7 @@ class RetrieverSettings:
     output_folder: str = "backup/UniqueRetriever"
     flatten_result: bool = True
     filename: str | None = None
-    backup: bool = True
+    backup: bool = False
     backup_when_halted: bool = False
     multithread: bool = False
 

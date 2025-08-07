@@ -33,7 +33,7 @@ class SearchForeman(IterableForeman):
     def _pack(self, raw_items) -> SearchContainer:
         return super()._pack(raw_items)
     
-    def _ship(self, box, backup=True) -> SearchShipper:
+    def _ship(self, box, backup=False) -> SearchShipper:
         return super()._ship(box, backup)
 
     def invoke(self, iterable: list[SearchParamProps], developerKey: str,

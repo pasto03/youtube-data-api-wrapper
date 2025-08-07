@@ -19,7 +19,7 @@ class VideosForeman(UniqueForeman):
     def _pack(self, raw_items) -> VideosContainer:
         return super()._pack(raw_items)
     
-    def _ship(self, box, backup=True) -> VideoShipper:
+    def _ship(self, box, backup=False) -> VideoShipper:
         return super()._ship(box, backup)
 
     def invoke(self, iterable: list[str], developerKey: str, 

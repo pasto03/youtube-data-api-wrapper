@@ -17,7 +17,7 @@ def get_current_time():
 
 def build_client(developerKey):
     from googleapiclient.discovery import build
-    client = build('youtube', 'v3', developerKey=developerKey)
+    client = build('youtube', 'v3', developerKey=developerKey, cache_discovery=False)
     return client
 
 def handle_backup(raw_items: list[dict], output_folder="backup/Backups", filename=None):

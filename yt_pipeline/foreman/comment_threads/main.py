@@ -20,7 +20,7 @@ class CommentThreadsForeman(IterableForeman):
     def _pack(self, raw_items: list[dict]) -> CommentThreadsContainer:
         return super()._pack(raw_items)
     
-    def _ship(self, box: CommentThreadsContainer, backup=True) -> CommentThreadsShipper:
+    def _ship(self, box: CommentThreadsContainer, backup=False) -> CommentThreadsShipper:
         return super()._ship(box, backup)
     
     def invoke(self, iterable: list[str], developerKey: str,

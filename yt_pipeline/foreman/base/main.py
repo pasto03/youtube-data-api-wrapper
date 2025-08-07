@@ -36,7 +36,7 @@ class BaseForeman:
     def _pack(self, raw_items: list[dict]) -> BaseContainer:
         return self.container(raw_items)
     
-    def _ship(self, box: BaseContainer, backup=True) -> BaseShipper:
+    def _ship(self, box: BaseContainer, backup=False) -> BaseShipper:
         shipper = self.shipper()
         shipper.invoke(box.items, backup=backup)
         return shipper

@@ -19,7 +19,7 @@ class ChannelsForeman(UniqueForeman):
     def _pack(self, raw_items) -> ChannelsContainer:
         return super()._pack(raw_items)
     
-    def _ship(self, box, backup=True) -> ChannelShipper:
+    def _ship(self, box, backup=False) -> ChannelShipper:
         return super()._ship(box, backup)
 
     def invoke(self, iterable: list[str], developerKey: str, 

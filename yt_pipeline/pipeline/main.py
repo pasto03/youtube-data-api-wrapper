@@ -3,7 +3,7 @@ a pipeline with allows muitiple steps of data retrieval
 """
 import time
 import json
-from typing import Literal, Optional, List
+from typing import Literal, Optional, List, Type
 from dataclasses import dataclass, asdict, field
 
 import logging
@@ -24,22 +24,6 @@ from yt_pipeline.foreman import *
 class PipelineBlock:
     """
     Represents a single block in a data processing pipeline.
-
-    Attributes:
-        foreman (IterableForeman | UniqueForeman | BaseForeman):
-            The foreman instance responsible for executing this block's task.
-        pipe_settings (Optional[PipeSettings]):
-            Configuration specific to the foreman. Only applicable for IterableForeman.
-        retriever_settings (RetrieverSettings):
-            Configuration specific to the corresponding retriever of a foreman.
-        save_output (bool): 
-            Whether to include this block's output in the final PipelineDeliverable.
-        backup_shipper (bool):
-            Whether to backup output from shipper.
-        max_workers (int):
-            Numbers of workers in concurrent pool in multithreading mode.
-        debug (bool):
-            Whether to print request url of each API request.
     """
     foreman: IterableForeman | UniqueForeman | BaseForeman = None
     pipe_settings: Optional[PipeSettings] = None
@@ -54,21 +38,13 @@ class PipelineBlock:
 class PipelineStacks:
     """
     Represents a complete pipeline composed of sequential processing blocks.
-
-    Attributes:
-        initial_input (List[str] | List[SearchParamProps] | List[CaptionsParams]):
-            The input data passed to the first block in the pipeline.
-        blocks (List[PipelineBlock]):
-            The ordered list of blocks to be executed in the pipeline.
-        backup (bool):
-            Whether to backup the output from each block's foreman.
     """
     initial_input: List[str] | List[SearchParamProps] | List[CaptionsParams] = None
     blocks: List[PipelineBlock] = None
-    backup: bool = True
+    backup: bool = False
 
 
-foreman_map: dict[str, UniqueForeman | IterableForeman | BaseForeman] = {
+foreman_map: dict[str, Type[UniqueForeman | IterableForeman | BaseForeman]] = {
             "videos": VideosForeman,
             "channels": ChannelsForeman,
             "search": SearchForeman,
@@ -77,7 +53,7 @@ foreman_map: dict[str, UniqueForeman | IterableForeman | BaseForeman] = {
             "comments": CommentThreadsForeman,
             "captions": CaptionsForeman
 }
-reverse_foreman_map: dict[UniqueForeman | IterableForeman | BaseForeman, str] = {v: k for k, v in foreman_map.items()}
+reverse_foreman_map: dict[Type[UniqueForeman | IterableForeman | BaseForeman], str] = {v: k for k, v in foreman_map.items()}
 
 # worker = CaptionsForeman()
 # print(reverse_foreman_map)
@@ -150,6 +126,8 @@ class PipelineDeliverable:
 
         with open(output_path, "wb") as f:
             f.write(json.dumps(output, indent=4, ensure_ascii=False).encode("utf-8"))
+        
+        logging.info("file saved to {}".format(output_path))
 
 
 class Pipeline:
@@ -277,7 +255,7 @@ class Pipeline:
 
         while True:
             block = blocks[block_count]
-            logging.info("\nBlock {} | block object: {}".format(block_count, block))
+            logging.debug("\nBlock {} | block object: {}".format(block_count, block))
 
             # print("Current iterable: {}\n".format(iterable))
 
@@ -288,6 +266,8 @@ class Pipeline:
             backup_shipper = block.backup_shipper
             max_workers = block.max_workers
             debug = block.debug
+
+            # print(backup_shipper)
 
             kwargs = {"pipe_settings": pipe_settings} if pipe_settings is not None else {}
 
@@ -346,17 +326,42 @@ class Pipeline:
                         iterable.append(i.id)
 
             # a bug of YouTube Data API even search types specified as "video", "channel" result can occur
-            elif current_foreman_name == "search" and next_foreman_name == "videos":
+            elif current_foreman_name == "search":
                 iterable = list()
-
                 items: list[SearchItem]
-                for i in items:
-                    # print(i.id)
-                    if i.id.kind == "youtube#video":
+
+                logging.debug("inside search condition block")
+                logging.debug("next foreman name: {}".format(next_foreman_name))
+
+                if next_foreman_name == "channels":
+                    # logging.debug("first item: {}".format(items[0]))
+                    for i in items:
                         # print(i.id)
-                        iterable.append(i.id.videoId)
+                        if i.id.kind == "youtube#channel":
+                            # print(i.id)
+                            iterable.append(i.id.channelId)
+
+                elif next_foreman_name == "playlists":
+                    for i in items:
+                        # print(i.id)
+                        if i.id.kind == "youtube#playlist":
+                            # print(i.id)
+                            iterable.append(i.id.playlistId)
+
+                elif next_foreman_name == "videos":
+                    for i in items:
+                        # print(i.id)
+                        if i.id.kind == "youtube#video":
+                            # print(i.id)
+                            iterable.append(i.id.videoId)
+
+                else:
+                    logging.error("Invalid foreman name passed. This should have been filtered by validate_stacks() unless it is not working properly")
+                    raise ValueError("Invalid foreman name '{}' passed".format(next_foreman_name))
                 
             else:
                 iterable = [extractor_function(i) for i in items]
+
+            logging.debug("next iterable: {}".format(iterable))
 
             block_count += 1

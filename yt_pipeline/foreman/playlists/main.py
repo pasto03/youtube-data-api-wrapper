@@ -20,7 +20,7 @@ class PlaylistsForeman(IterableForeman):
     def _pack(self, raw_items) -> PlaylistsContainer:
         return super()._pack(raw_items)
     
-    def _ship(self, box, backup=True) -> PlaylistShipper:
+    def _ship(self, box, backup=False) -> PlaylistShipper:
         return super()._ship(box, backup)
     
     def invoke(self, iterable: list[str], developerKey: str,
