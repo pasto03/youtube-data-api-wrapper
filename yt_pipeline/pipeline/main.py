@@ -6,6 +6,8 @@ import json
 from typing import Literal, Optional, List
 from dataclasses import dataclass, asdict, field
 
+import logging
+logging.basicConfig(level=logging.INFO)
 
 from yt_pipeline.retriever.search import SearchParamProps
 from yt_pipeline.retriever.base import PipeSettings, RetrieverSettings
@@ -155,7 +157,115 @@ class Pipeline:
         self.stacks = stacks
         self.developerKey = developerKey
 
+    def validate_stacks(self):
+        # 1. validate initial input
+        blocks = self.stacks.blocks
+        initial_input = self.stacks.initial_input
+
+        # 1.1 initial_input must be a list
+        if not isinstance(initial_input, list):
+            raise TypeError("initial_input must be a list")
+
+        # 1.2 If first foreman is SearchForeman, initial_input must be list[SearchParamProps]
+        if isinstance(blocks[0].foreman, SearchForeman):
+            if not all(isinstance(i, SearchParamProps) for i in initial_input):
+                raise TypeError("initial_input should be list[SearchParamProps] when the first foreman is SearchForeman")
+        
+        # 1.3 Else, initial_input must be list[str] | list[CaptionsParams]
+        else:
+            if not all(isinstance(i, (str, CaptionsParams)) for i in initial_input):
+                raise TypeError("initial_input must be list[str] | list[CaptionsParams]")
+            
+        
+        # 2. validate blocks connections
+        block_count = 0
+        block = blocks[block_count]
+        foreman_name = reverse_foreman_map[type(block.foreman)]
+
+        while True:
+            # foreman_name = reverse_foreman_map[type(block.foreman)]
+            if block_count + 1 == len(blocks):
+                return True
+            
+            block_count += 1
+            block = blocks[block_count]
+            next_foreman_name = reverse_foreman_map[type(block.foreman)]
+            available_next_blocks = available_block_map[foreman_name]
+
+            logging.info("Current connection: {} -> {}".format(foreman_name, next_foreman_name))
+            logging.info("Available next blocks for {}: {}".format(foreman_name, available_next_blocks))
+
+            if next_foreman_name not in available_next_blocks:
+                logging.error("{} cannot be connected to {}".format(next_foreman_name, foreman_name))
+                return False
+            
+            foreman_name = next_foreman_name
+
+
     def invoke(self) -> PipelineDeliverable | None:
+        """
+        Execute the pipeline by processing each block sequentially.
+
+        Execution Steps:
+        
+        0. Validate stacks: if stacks not valid return
+        
+        1. Initialize main variables:
+            - `dlv` ← `PipelineDeliverable()`
+            - `blocks` ← `self.stacks.blocks`
+            - `block_count` ← 0
+            - `iterable` ← `self.stacks.initial_input`
+
+        2. Loop until return:
+            2.1. Get current `PipelineBlock` object:
+                - `block` ← `blocks[block_count]`
+            
+            2.2. Extract keyword parameters from `block`, 
+                pass parameters to `foreman` to invoke:
+                - `box` ← `foreman.invoke(**kwargs)`
+
+            2.3. Get items from execution:
+                - `items` ← `box.items`
+                - If no items are retrieved, return.
+
+            2.4. If current block is the last block, return final output:
+                - Convert `Container` to `Shipper`:  
+                `shipper` ← `foreman._ship(box)`
+                - Save to `PipelineProduct`:  
+                `product` ← `PipelineProduct(title=block.foreman.name, shipper=shipper)`
+                - Append `product` to `dlv.products`
+                - Return `dlv`
+
+            2.5. If `save_output` is set to `True` in block, save output:
+                - Convert `Container` to `Shipper`:  
+                `shipper` ← `foreman._ship(box)`
+                - Save to `PipelineProduct`:  
+                `product` ← `PipelineProduct(title=block.foreman.name, shipper=shipper)`
+                - Append `product` to `dlv.products`
+
+            2.6. Get next block and next foreman's name:
+                - `next_block` ← `blocks[block_count + 1]`
+                - `next_foreman_name` ← `reverse_foreman_map[type(next_block.foreman)]`
+
+            2.7. Get current foreman's name and extractor function:
+                - `current_foreman_name` ← `reverse_foreman_map[type(block.foreman)]`
+                - `extractor_function` ← `block_access_func_map[current_foreman_name][next_foreman_name]`
+
+            2.8. Extract ID from `items` as next `iterable`:
+                - If `current_foreman_name == "videos"`:  
+                `iterable` ← `extract_video_items_id(items: list[VideoItems])`
+                - Else if `current_foreman_name == "search"` and `next_foreman_name == "videos"`:  
+                `iterable` ← `extract_search_video_items_id(items: list[SearchItems])`
+                - Else:  
+                `iterable` ← `[extractor_function(i) for i in items]`
+
+            2.9. Increment block count:
+                - `block_count += 1`
+        """
+        is_valid = self.validate_stacks()
+        if not is_valid:
+            return
+        
         start = time.time()
 
         dlv = PipelineDeliverable()
@@ -167,7 +277,7 @@ class Pipeline:
 
         while True:
             block = blocks[block_count]
-            print("\nBlock {} | block object: {}".format(block_count, block))
+            logging.info("\nBlock {} | block object: {}".format(block_count, block))
 
             # print("Current iterable: {}\n".format(iterable))
 
@@ -187,12 +297,12 @@ class Pipeline:
 
             items = box.items
             if not items:
-                print("Pipeline early ended due to empty items retrieved. (block: {})".format(block))
+                logging.info("Pipeline early ended due to empty items retrieved. (block: {})".format(block))
                 return
             
             # print("items:", items[:5])
 
-            print("{} item(s) retrieved.".format(len(items)))
+            logging.info("{} item(s) retrieved.".format(len(items)))
             
             # if current block is the last block, return final output
             if block_count + 1  == len(blocks):
@@ -201,9 +311,9 @@ class Pipeline:
                 shipper = foreman._ship(box)
                 product = PipelineProduct(title=block.foreman.name, shipper=shipper)
                 dlv.products.append(product)
-                print("Pipeline completed.")
+                logging.info("Pipeline completed.")
                 end = time.time()
-                print("Execution time: {:.2f}s".format(end-start))
+                logging.info("Execution time: {:.2f}s".format(end-start))
                 return dlv
             
             # add to deliverables if specified
