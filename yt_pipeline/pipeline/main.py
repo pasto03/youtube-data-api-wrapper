@@ -103,7 +103,10 @@ class PipelineProduct:
 class PipelineDeliverable:
     products: List[PipelineProduct] = field(default_factory=list)
 
-    def to_json(self, output_path: str):
+    def to_json(self, output_path: str = None) -> None | dict:
+        """
+        convert object to json (and save to file if output_path specified)
+        """
         output = dict()
         output["products"] = list()
 
@@ -124,11 +127,15 @@ class PipelineDeliverable:
 
             output["products"].append(record)
 
-        with open(output_path, "wb") as f:
-            f.write(json.dumps(output, indent=4, ensure_ascii=False).encode("utf-8"))
-        
-        logging.info("file saved to {}".format(output_path))
+        if output_path:
 
+            with open(output_path, "wb") as f:
+                f.write(json.dumps(output, indent=4, ensure_ascii=False).encode("utf-8"))
+        
+            logging.info("file saved to {}".format(output_path))
+        
+        else:
+            return output
 
 class Pipeline:
     def __init__(self, stacks: PipelineStacks, developerKey: str):
