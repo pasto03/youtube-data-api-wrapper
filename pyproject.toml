@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "yt_pipeline"
+version = "1.0.0"
+description = "A composable Python framework for building structured and extensible data pipelines using the YouTube Data API, with features such as progress display and flexible pipeline composition."
+authors = [
+    { name = "Ben Law", email = "chumaolaw@gmail.com" }
+]
+readme = "README.md"
+requires-python = ">=3.7"
+license = { text = "MIT" }
+dependencies = [
+    "tqdm",
+    "google-api-python-client",
+    "isodate"
+]
+
+[project.urls]
+Homepage = "https://github.com/pasto03/youtube-data-api-wrapper"
+
+[tool.setuptools.packages.find]
+where = ["."]

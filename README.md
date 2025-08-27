@@ -1,125 +1,118 @@
-# youtube-data-api-wrapper
+# yt_pipeline
 
-A developer-friendly wrapper for the YouTube Data API v3, designed to simplify video, channel, playlist retrieval and enable pipeline-style data workflows.
+[![PyPI version](https://badge.fury.io/py/yt-pipeline.svg)](https://badge.fury.io/py/yt-pipeline)
+
+A powerful, modular, and extensible toolkit that streamlines YouTube Data API v3 usage—designed with efficiency, scalability, and simplicity in mind. Retrieve, process, and organize YouTube data in seconds, from one-liners to fully customizable pipelines.
 
 ---
 
-## 🚀 Quickstart
+## Features
 
-Retrieve video details given a list of `videoIds`:
+- **Simple Querying** — Instantly fetch channels, videos, comments, and more with concise code.
+- **Batch & Multithreaded Efficiency** — Get thousands of results while maximizing quota usage.
+- **Pipeline Automation** — Chain multiple API calls into one seamless workflow.
+- **Extensibility** — Use “Foreman” for smart object grouping; build custom data pipelines tailored to your needs.
+- **Fine-grained Control** — Tune API settings, page limits, types, and outputs for YouTube’s versatile endpoints.
 
-```python
-from youtube_data_api.foreman import VideosForeman
+---
 
-videoIds = ["id1", "id2", ...]
-foreman = VideosForeman()
+## Quickstart
 
-# Invoke the foreman
-shipper = foreman.invoke(iterable=videoIds, developerKey="YOUR_DEV_KEY")
+Install with:
 
-# Access structured output
-records = shipper.main_records
-thumbnails = shipper.thumbnails
+```bash
+pip install yt_pipeline
 ```
 
-All other `Foreman` types follow the same invocation structure.
-
----
-
-## 🔍 Search with `SearchForeman`
-
-Search for videos, playlists, or channels by keyword:
-
-```python
-from youtube_data_api.foreman import SearchForeman
-from youtube_data_api.retriever.base import PipeSettings
-from youtube_data_api.retriever.search import SearchTypeCheckboxProps, SearchParamProps
-
-# Initialize search types (channel, playlist, video)
-foreman = SearchForeman(types=SearchTypeCheckboxProps(channel=True, playlist=True, video=True))
-
-# Run search with custom settings
-shipper = foreman.invoke(
-    iterable=[SearchParamProps(q="Bruno Mars", order="viewCount")],
-    developerKey="YOUR_DEV_KEY",
-    settings=PipeSettings(retrieval="all", max_page=5)
-)
-
-records = shipper.main_records
-```
-
-📄 Complete example: [`examples/foreman/5 SearchForeman.py`](examples/foreman/5%20SearchForeman.py)
-
----
-
-## 🔧 Build Custom Pipelines
-
-Chain multiple retrieval steps (e.g., search → fetch video details):
-
-```python
-def example1():
-    from youtube_data_api.pipeline import Pipeline, PipelineBlock, PipelineStacks
-    from youtube_data_api.foreman import SearchForeman, VideosForeman
-    from youtube_data_api.retriever.base import PipeSettings
-    from youtube_data_api.retriever.search import SearchParamProps, SearchTypeCheckboxProps
-
-    blocks = [
-        PipelineBlock(
-            is_initial=True,
-            foreman=SearchForeman(types=SearchTypeCheckboxProps(video=True)),
-            settings=PipeSettings(retrieval="head"),
-            save_output=True
-        ),
-        PipelineBlock(
-            inputvar_name="videoId",
-            foreman=VideosForeman(),
-            save_output=True
-        )
-    ]
-
-    stacks = PipelineStacks(
-        initial_input=[SearchParamProps(q="Bruno Mars", order="viewCount")],
-        blocks=blocks,
-        backup=True
-    )
-
-    pipeline = Pipeline(stacks, developerKey="YOUR_DEV_KEY")
-    dlv = pipeline.invoke()
-
-    # Save result
-    dlv.to_json("OUTPUT.json")
-```
-
-📄 Complete example: [`examples/pipeline/example.py`](examples/pipeline/example.py)
-
----
-
-## 📦 Installation
-
+or:
 ```bash
 pip install git+https://github.com/pasto03/youtube-data-api-wrapper.git
 ```
 
+### Example: Fetch Channel Details in Bulk
+
+```python
+from yt_pipeline.retriever import ChannelsRetriever
+
+channel_ids = ["UC_x5XG1OV2P6uZZ5FSM9Ttw", ...]  # replace with your channel IDs
+devKey = "YOUR_YOUTUBE_API_KEY"
+
+worker = ChannelsRetriever(iterable=channel_ids, developerKey=devKey, max_workers=16)
+results = worker.invoke(multithread=True)
+print("Channels fetched:", len(results))
+```
 
 ---
 
-## 📚 Documentation
+### Example: Pipeline — From Search to Video Comments
 
-Coming soon! For now, explore the `examples/` folder for usage references.
+```python
+from yt_pipeline.pipeline import Pipeline, PipelineBlock, PipelineStacks
+from yt_pipeline.foreman import SearchForeman, VideosForeman, CommentThreadsForeman
+from yt_pipeline.retriever import RetrieverSettings, PipeSettings, SearchParamProps, SearchTypeCheckboxProps
+
+stacks = PipelineStacks(
+    initial_input=[
+        SearchParamProps(q="python tutorial", order="relevance")
+    ],
+    blocks=[
+        PipelineBlock(
+            foreman=SearchForeman(types=SearchTypeCheckboxProps(video=True)),
+            pipe_settings=PipeSettings(retrieval="all", max_page=1),
+            retriever_settings=RetrieverSettings(multithread=True),
+            max_workers=8
+        ),
+        PipelineBlock(
+            foreman=VideosForeman(),
+            retriever_settings=RetrieverSettings(multithread=True),
+            max_workers=8
+        ),
+        PipelineBlock(
+            foreman=CommentThreadsForeman(),
+            pipe_settings=PipeSettings(retrieval="all", max_page=3),
+            retriever_settings=RetrieverSettings(multithread=True),
+            max_workers=8
+        )
+    ]
+)
+
+pipeline = Pipeline(stacks=stacks, developerKey=devKey)
+result = pipeline.invoke()
+```
 
 ---
 
-## 🛠️ Features
+## Design Overview
 
-- Unified invocation interface for all foreman types
-- Dataclass-based inputs and outputs
-- Pipeline composition and modularity
-- JSON export-ready results
+- **Retriever:** For single-step/batch data fetching (Channels, Videos, Comments, etc).
+- **Foreman:** For organizing and structuring retrieved data into objects or formatted lists.
+- **Pipeline:** For multi-step workflows, chaining API queries as a robust, automated data pipeline.
 
 ---
 
-## 📜 License
+## Supported Endpoints
+
+- Search (channels, videos, playlists)
+- Channels, Videos, Playlists, PlaylistItems
+- Captions, Comments
+- And more...
+
+---
+
+## Documentation
+
+- 📖 Full documentation coming soon!  
+- For API reference, advanced usage, and extension guides, stay tuned or check the [docs ➔]().
+
+---
+
+## License
 
 MIT License.
+
+---
+
+Contributions and feedback are welcome!  
+Star the repo and let us know what you build 🚀
 
 ---

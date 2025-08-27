@@ -1,0 +1,43 @@
+{
+    "initial_input": [
+        {
+            "q": "柔佛房地产",
+            "channelId": null,
+            "videoCategoryId": null,
+            "videoDuration": "any",
+            "order": "viewCount",
+            "publishedAfter": null
+        }
+    ],
+    "blocks": [
+        {
+            "foreman": "search",
+            "types": ["channel"],
+            "page": 1,
+            "multithread": true,
+            "save_output": true,
+            "max_workers": 16
+        },
+        {
+            "foreman": "channels",
+            "multithread": true,
+            "save_output": true,
+            "max_workers": 16
+        },
+        {
+            "foreman": "playlists",
+            "page": 1,
+            "multithread": true,
+            "save_output": true,
+            "max_workers": 16
+        },
+        {
+            "foreman": "playlist_items",
+            "page": 1,
+            "multithread": true,
+            "save_output": true,
+            "max_workers": 16
+        }
+    ],
+    "backup": true
+}
