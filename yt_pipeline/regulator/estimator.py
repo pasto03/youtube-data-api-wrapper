@@ -117,7 +117,7 @@ class PlaylistEstimator(IterableEstimator):
 
 class SearchEstimator(IterableEstimator):
     def __init__(self):
-        super().__init__(cost_per_call=100)
+        super().__init__(cost_per_call=200)
 
 
 class CommentThreadsEstimator(IterableEstimator):
