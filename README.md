@@ -113,6 +113,5 @@ MIT License.
 ---
 
 Contributions and feedback are welcome!  
-Star the repo and let us know what you build 🚀
 
 ---
