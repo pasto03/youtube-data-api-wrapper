@@ -46,20 +46,26 @@ class PipelineStacksConstructor:
         return foreman
 
     def _construct_block(self, block_json: dict):
-        foreman_name = block_json["foreman"]
+        foreman_name: str = block_json["foreman"]
         types = block_json.get("types") # only effective for "search" / SearchForeman
-        page = int(block_json.get("page", 0))       # only effective for IterableForeman
+        page = int(block_json.get("page") or 0)    # only effective for IterableForeman; string -> int
         multithread = block_json.get("multithread", False)
         save_output = block_json.get("save_output", False)
         max_workers = block_json.get("max_workers", 16)     # only effective when multithread=True
         backup_shipper = block_json.get("backup_shipper", False)
         debug = block_json.get("debug", False)
 
+        # pipe_settings = PipeSettings(retrieval="all", max_page=page) if page else None
+        foreman_class = foreman_map[foreman_name]
 
-        pipe_settings = PipeSettings(retrieval="all", max_page=page) if page else None
+        if issubclass(foreman_class, IterableForeman):
+            pipe_settings = PipeSettings(retrieval="all", max_page=page)
+        else:
+            pipe_settings = None
+
         retriever_settings = RetrieverSettings(backup=self.backup, 
-                                               backup_when_halted=self.backup_when_halted, 
-                                               multithread=multithread)
+                                        backup_when_halted=self.backup_when_halted, 
+                                        multithread=multithread)
         
         foreman = self._construct_foreman(foreman_name=foreman_name, types=types)
 
@@ -107,29 +113,36 @@ class PipelineStacksConstructor:
     
     def invoke(self, stacks_json: dict, verbose=0):
         initial_input_json: list[str] | list[dict] = stacks_json["initial_input"]
-        blocks = stacks_json["blocks"]
-
-        self._validate_blocks(blocks=blocks, verbose=verbose)
-
-        first_foreman = blocks[0]["foreman"]
 
         if not (all(isinstance(i, str) for i in initial_input_json) 
-                or all(isinstance(i, dict) for i in initial_input_json)):
+            or all(isinstance(i, dict) for i in initial_input_json)):
             raise TypeError("initial_input should be list[str] | list[dict]")
         
-        if isinstance(initial_input_json[0], dict):
-            if first_foreman == "search":
-                initial_input: list[SearchParamProps] = [SearchParamProps(**item) for item in initial_input_json]
-            elif first_foreman == "captions":
-                initial_input: list[CaptionsParams] = [CaptionsParams(**item) for item in initial_input_json]
-        else:
+        initial_input = list()
+        
+        if initial_input_json and isinstance(initial_input_json[0], str):
             initial_input: list[str] = initial_input_json
+        
+        blocks = stacks_json.get("blocks")
+        constructed_blocks = None
 
-        backup = stacks_json.get("backup", False)
+        if blocks:
+            self._validate_blocks(blocks=blocks, verbose=verbose)
+
+            first_foreman = blocks[0]["foreman"]
+
+            if initial_input_json and isinstance(initial_input_json[0], dict):
+                if first_foreman == "search":
+                    initial_input: list[SearchParamProps] = [SearchParamProps(**item) for item in initial_input_json]
+                elif first_foreman == "captions":
+                    initial_input: list[CaptionsParams] = [CaptionsParams(**item) for item in initial_input_json]
+
+            backup = stacks_json.get("backup", False)
+            constructed_blocks = [self._construct_block(item) for item in blocks]
 
         stacks = PipelineStacks(
             initial_input=initial_input,
-            blocks=[self._construct_block(item) for item in stacks_json["blocks"]],
+            blocks=constructed_blocks,
             backup=backup
         )
 
