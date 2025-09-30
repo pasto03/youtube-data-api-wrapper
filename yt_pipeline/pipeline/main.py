@@ -285,7 +285,7 @@ class Pipeline:
             items = box.items
             if not items:
                 logging.info("Pipeline early ended due to empty items retrieved. (block: {})".format(block))
-                return
+                return dlv
             
             # print("items:", items[:5])
 
