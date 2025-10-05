@@ -142,24 +142,35 @@ class Pipeline:
         self.stacks = stacks
         self.developerKey = developerKey
 
-    def validate_stacks(self):
+        self._validate_stacks()
+
+    def _validate_stacks(self):
         # 1. validate initial input
         blocks = self.stacks.blocks
         initial_input = self.stacks.initial_input
 
-        # 1.1 initial_input must be a list
-        if not isinstance(initial_input, list):
+        # 1.1 initial_input and blocks must be a list
+        if not initial_input or not isinstance(initial_input, list):
             raise TypeError("initial_input must be a list")
-
-        # 1.2 If first foreman is SearchForeman, initial_input must be list[SearchParamProps]
-        if isinstance(blocks[0].foreman, SearchForeman):
+        
+        if not isinstance(blocks, list):
+            raise TypeError("blocks must be a list")
+        
+        first_foreman = blocks[0].foreman
+        # Case 1: foreman = SearchForeman, initial_input must be list[SearchParamProps]
+        if isinstance(first_foreman, SearchForeman):
             if not all(isinstance(i, SearchParamProps) for i in initial_input):
                 raise TypeError("initial_input should be list[SearchParamProps] when the first foreman is SearchForeman")
         
-        # 1.3 Else, initial_input must be list[str] | list[CaptionsParams]
+        # Case 2: foreman = CaptionsForeman, initial_input must be list[CaptionsParams]
+        elif isinstance(first_foreman, CaptionsForeman):
+            if not all(isinstance(i, CaptionsParams) for i in initial_input):
+                raise TypeError("initial_input should be list[CaptionsParams] when the first foreman is CaptionsForeman")
+
+        # Other cases: initial_input must be list[str]
         else:
-            if not all(isinstance(i, (str, CaptionsParams)) for i in initial_input):
-                raise TypeError("initial_input must be list[str] | list[CaptionsParams]")
+            if not all(isinstance(i, str) for i in initial_input):
+                raise TypeError("initial_input should be list[str]")
             
         
         # 2. validate blocks connections
@@ -247,9 +258,9 @@ class Pipeline:
             2.9. Increment block count:
                 - `block_count += 1`
         """
-        is_valid = self.validate_stacks()
-        if not is_valid:
-            return
+        # is_valid = self.validate_stacks()
+        # if not is_valid:
+        #     return
         
         start = time.time()
 
