@@ -37,4 +37,4 @@ class SearchRetriever(IterableRetriever):
     def invoke(self, output_folder="backup/SearchRetriever", flatten_result=True,
            filename=None, backup=True, backup_when_halted=False, multithread=False):
         # print("settings inside SearchRetriever:", self.settings)
-        return super().invoke(output_folder=output_folder, flatten_result=True, filename=filename, backup=backup, backup_when_halted=backup_when_halted, multithread=multithread)
+        return super().invoke(output_folder=output_folder, flatten_result=flatten_result, filename=filename, backup=backup, backup_when_halted=backup_when_halted, multithread=multithread)

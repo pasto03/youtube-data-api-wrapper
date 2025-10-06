@@ -12,6 +12,7 @@ class BaseForeman:
     Base foreman class
     """
     def __init__(self):
+        super().__init__()
         self.retriever = BaseRetriever
         self.container = BaseContainer
         self.shipper = BaseShipper
@@ -88,6 +89,7 @@ class IterableForeman(BaseForeman):
     Base foreman class for iterable retrievers
     """
     def __init__(self):
+        super().__init__()
         self.retriever = IterableRetriever
         self.name = "iterable"
 

@@ -11,10 +11,10 @@ backup
 
 /debugs
 *.excalidraw
-documentations
+# documentations
 
 devKey
 explanation_draft.txt
 
-documentations
+# documentations
 tests

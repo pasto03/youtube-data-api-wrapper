@@ -3,7 +3,7 @@ a pipeline with allows muitiple steps of data retrieval
 """
 import time
 import json
-from typing import Literal, Optional, List, Type
+from typing import TypeAlias, Literal, Optional, List, Type
 from dataclasses import dataclass, asdict, field
 
 import logging
@@ -44,7 +44,9 @@ class PipelineStacks:
     backup: bool = False
 
 
-foreman_map: dict[str, Type[UniqueForeman | IterableForeman | BaseForeman]] = {
+ForemanName = Literal["videos", "channels", "search", "playlists", "playlist_items", "comments", "captions"]
+
+foreman_map: dict[ForemanName, Type[UniqueForeman | IterableForeman | BaseForeman]] = {
             "videos": VideosForeman,
             "channels": ChannelsForeman,
             "search": SearchForeman,
@@ -53,17 +55,17 @@ foreman_map: dict[str, Type[UniqueForeman | IterableForeman | BaseForeman]] = {
             "comments": CommentThreadsForeman,
             "captions": CaptionsForeman
 }
-reverse_foreman_map: dict[Type[UniqueForeman | IterableForeman | BaseForeman], str] = {v: k for k, v in foreman_map.items()}
+reverse_foreman_map: dict[Type[UniqueForeman | IterableForeman | BaseForeman], ForemanName] = {v: k for k, v in foreman_map.items()}
 
 # worker = CaptionsForeman()
 # print(reverse_foreman_map)
 # print(reverse_foreman_map[type(worker)])
 
 # example: available blocks for videos: videos -> comments | videos -> captions
-available_block_map = {
+available_block_map: dict[ForemanName, list[ForemanName]] = {
     "videos": ["comments", "captions"],
     "channels": ["playlists"],
-    "search": ["videos", "channels", "playlists", "playlist_items"],
+    "search": ["videos", "channels", "playlists"],
     "playlists": ["playlist_items"],
     "playlist_items": ["videos"]
 }
@@ -80,8 +82,7 @@ block_access_func_map = {
     "search": {
         "videos": lambda x: x.id.videoId,
         "channels": lambda x: x.id.channelId,
-        "playlists": lambda x: x.id.channelId,
-        "playlist_items": lambda x: x.id.playlistId
+        "playlists": lambda x: x.id.playlistId
     },
     "playlists": {
         "playlist_items": lambda x: x.id
@@ -142,7 +143,8 @@ class Pipeline:
         self.stacks = stacks
         self.developerKey = developerKey
 
-        self._validate_stacks()
+        is_valid = self._validate_stacks()
+        if not is_valid: logging.error("pipeline is invalid")
 
     def _validate_stacks(self):
         # 1. validate initial input
@@ -183,9 +185,8 @@ class Pipeline:
             if block_count + 1 == len(blocks):
                 return True
             
-            block_count += 1
-            block = blocks[block_count]
-            next_foreman_name = reverse_foreman_map[type(block.foreman)]
+            next_block = blocks[block_count + 1]
+            next_foreman_name = reverse_foreman_map[type(next_block.foreman)]
             available_next_blocks = available_block_map[foreman_name]
 
             logging.info("Current connection: {} -> {}".format(foreman_name, next_foreman_name))
@@ -195,7 +196,32 @@ class Pipeline:
                 logging.error("{} cannot be connected to {}".format(next_foreman_name, foreman_name))
                 return False
             
+            # when foreman is SearchForeman, if search type does not contain the type needed in next block, return False
+            if foreman_name == "search" and isinstance(block.foreman, SearchForeman):
+                search_types = block.foreman.types
+
+                match next_foreman_name:
+                    # search (videoId)-> videos
+                    case "videos":
+                        if not search_types.video:
+                            logging.error("missing search type 'video'")
+                            return False
+                        
+                    # search (channelId)-> channels
+                    case "channels":
+                        if not search_types.channel:
+                            logging.error("missing search type 'channel'")
+                            return False
+                        
+                    # search (playlistId)-> playlists
+                    case "playlists":
+                        if not search_types.playlist:
+                            logging.error("missing search type 'playlist'")
+                            return False
+            
             foreman_name = next_foreman_name
+            block = next_block
+            block_count += 1
 
 
     def invoke(self) -> PipelineDeliverable | None:
