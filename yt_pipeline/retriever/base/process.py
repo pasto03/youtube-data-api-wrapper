@@ -2,6 +2,7 @@
 Run pipes in different modes (iterative / multithreading)
 """
 import os
+import logging
 from typing import Literal, TypeAlias, get_args
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from tqdm import tqdm
@@ -55,11 +56,16 @@ def run_pipe(
     result = safely_run_pipe(pipe, ignored_errors=ignored_errors)
     return (idx, result, ignored_errors)
 
+
+PipeSuccessResponse = list[dict] | list[list[dict]]
+PipeErrorResponse = tuple[list[dict] | list[list[dict]], HttpErrorContainer | Exception]
+PipeResponse = PipeSuccessResponse | PipeErrorResponse
+
 def multithreading_run_pipe(
         pipes: list[IterablePipe | UniquePipe], ignored_errors: list[HttpErrorContainer],
         flatten_result=True, max_workers=8, backup_when_halted=False,
         output_folder="backup/IterableRetriever", filename=None
-        ) -> list[dict] | list[list[dict]] | tuple[list[dict] | list[list[dict]], HttpErrorContainer | Exception]:
+        ) -> PipeResponse:
     """
     run pipes in multithreading form with a progress bar
     """
@@ -96,13 +102,17 @@ def multithreading_run_pipe(
                 ignored_errors.extend(_ignored_errors)
                 raw_results.append((_idx, item))
 
-            # unignorable error exists: halt execution
+            # fatal error exists: halt execution
             else:
                 error = item
-                print("ERR:", error)
-                bar.set_description("Pipe halted due to error.")
+                bar.set_description("Pipe halted due to fatal error.")
                 break
         bar.close()
+
+        if isinstance(error, HttpErrorContainer):
+            logging.error(f"{error.reason}({error.code}): {error.message}")
+        elif isinstance(error, Exception):
+            logging.error(error)
 
     raw_items = sort_results_to_items(raw_results)
 
@@ -118,7 +128,7 @@ def multithreading_run_pipe(
 def iterating_run_pipe(
         pipes: list[IterablePipe | UniquePipe], ignored_errors: list[HttpErrorContainer], flatten_result=True,
         output_folder="backup/IterableRetriever", filename=None, backup_when_halted=False
-    ) -> list[dict] | list[list[dict]] | tuple[list[dict] | list[list[dict]], HttpErrorContainer | Exception]:
+    ) -> PipeResponse:
     """
     run pipes in iterative form with a progress bar
     """
@@ -135,11 +145,17 @@ def iterating_run_pipe(
         # normal results or ignorable error exists: proceed
         if isinstance(result, list):
             items = result
-        # unignorable error exists: halt execution
+        # fatal error exists: halt execution
         else:
             error = result
-            bar.set_description("Pipe halted due to error.")
+            bar.set_description("Pipe halted due to fatal error.")
             bar.close()
+
+            if isinstance(error, HttpErrorContainer):
+                logging.error(f"{error.reason}({error.code}): {error.message}")
+            else:
+                logging.error(error)
+
             if backup_when_halted:
                 handle_backup(raw_items, output_folder=output_folder, filename=filename)
             return raw_items, error

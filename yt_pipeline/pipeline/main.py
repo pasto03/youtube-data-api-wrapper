@@ -9,6 +9,7 @@ from dataclasses import dataclass, asdict, field
 import logging
 logging.basicConfig(level=logging.INFO)
 
+
 from yt_pipeline.retriever.search import SearchParamProps
 from yt_pipeline.retriever.base import PipeSettings, RetrieverSettings
 from yt_pipeline.retriever.captions import CaptionsParams
@@ -20,12 +21,14 @@ from yt_pipeline.foreman.base import IterableForeman, UniqueForeman, BaseForeman
 from yt_pipeline.foreman import *
 
 
+Foreman = UniqueForeman | IterableForeman | BaseForeman
+
 @dataclass
 class PipelineBlock:
     """
     Represents a single block in a data processing pipeline.
     """
-    foreman: IterableForeman | UniqueForeman | BaseForeman = None
+    foreman: Foreman = None
     pipe_settings: Optional[PipeSettings] = None
     retriever_settings: RetrieverSettings = None
     save_output: bool = False
@@ -46,7 +49,7 @@ class PipelineStacks:
 
 ForemanName = Literal["videos", "channels", "search", "playlists", "playlist_items", "comments", "captions"]
 
-foreman_map: dict[ForemanName, Type[UniqueForeman | IterableForeman | BaseForeman]] = {
+foreman_map: dict[ForemanName, Type[Foreman]] = {
             "videos": VideosForeman,
             "channels": ChannelsForeman,
             "search": SearchForeman,
@@ -55,7 +58,7 @@ foreman_map: dict[ForemanName, Type[UniqueForeman | IterableForeman | BaseForema
             "comments": CommentThreadsForeman,
             "captions": CaptionsForeman
 }
-reverse_foreman_map: dict[Type[UniqueForeman | IterableForeman | BaseForeman], ForemanName] = {v: k for k, v in foreman_map.items()}
+reverse_foreman_map: dict[Type[Foreman], ForemanName] = {v: k for k, v in foreman_map.items()}
 
 # worker = CaptionsForeman()
 # print(reverse_foreman_map)
@@ -91,6 +94,45 @@ block_access_func_map = {
         "videos": lambda x: x.contentDetails.videoId
     }
 }
+
+
+def validate_connection(parent: Foreman, child: Foreman, verbose=0):
+    parent_name = reverse_foreman_map[type(parent)]
+    child_name = reverse_foreman_map[type(child)]
+    available_next_blocks = available_block_map[parent_name]
+
+    if verbose:
+        logging.info("Current connection: {} -> {}".format(parent_name, child_name))
+        logging.info("Available next blocks for {}: {}".format(parent_name, available_next_blocks))
+
+    if child_name not in available_next_blocks:
+        logging.error("{} cannot be connected to {}".format(child_name, parent_name))
+        return False
+    
+    # when foreman is SearchForeman, if search type does not contain the type needed in next block, return False
+    if parent_name == "search" and isinstance(parent, SearchForeman):
+        search_types = parent.types
+
+        match child_name:
+            # search (videoId)-> videos
+            case "videos":
+                if not search_types.video:
+                    logging.error("missing search type 'video'")
+                    return False
+                
+            # search (channelId)-> channels
+            case "channels":
+                if not search_types.channel:
+                    logging.error("missing search type 'channel'")
+                    return False
+                
+            # search (playlistId)-> playlists
+            case "playlists":
+                if not search_types.playlist:
+                    logging.error("missing search type 'playlist'")
+                    return False
+                
+    return True
 
 
 @dataclass
@@ -146,11 +188,12 @@ class Pipeline:
         is_valid = self._validate_stacks()
         if not is_valid: logging.error("pipeline is invalid")
 
-    def _validate_stacks(self):
-        # 1. validate initial input
-        blocks = self.stacks.blocks
-        initial_input = self.stacks.initial_input
-
+    
+    def _validate_initial_input(
+            self, 
+            blocks: List[PipelineBlock],
+            initial_input: List[str] | List[SearchParamProps] | List[CaptionsParams]
+        ):
         # 1.1 initial_input and blocks must be a list
         if not initial_input or not isinstance(initial_input, list):
             raise TypeError("initial_input must be a list")
@@ -173,53 +216,27 @@ class Pipeline:
         else:
             if not all(isinstance(i, str) for i in initial_input):
                 raise TypeError("initial_input should be list[str]")
-            
+
+    def _validate_stacks(self):
+        blocks = self.stacks.blocks
+        initial_input = self.stacks.initial_input
+
+        # 1. validate initial input
+        self._validate_initial_input(blocks=blocks, initial_input=initial_input)
         
         # 2. validate blocks connections
         block_count = 0
         block = blocks[block_count]
-        foreman_name = reverse_foreman_map[type(block.foreman)]
 
         while True:
-            # foreman_name = reverse_foreman_map[type(block.foreman)]
             if block_count + 1 == len(blocks):
                 return True
             
             next_block = blocks[block_count + 1]
-            next_foreman_name = reverse_foreman_map[type(next_block.foreman)]
-            available_next_blocks = available_block_map[foreman_name]
 
-            logging.info("Current connection: {} -> {}".format(foreman_name, next_foreman_name))
-            logging.info("Available next blocks for {}: {}".format(foreman_name, available_next_blocks))
-
-            if next_foreman_name not in available_next_blocks:
-                logging.error("{} cannot be connected to {}".format(next_foreman_name, foreman_name))
+            if not validate_connection(block.foreman, next_block.foreman):
                 return False
             
-            # when foreman is SearchForeman, if search type does not contain the type needed in next block, return False
-            if foreman_name == "search" and isinstance(block.foreman, SearchForeman):
-                search_types = block.foreman.types
-
-                match next_foreman_name:
-                    # search (videoId)-> videos
-                    case "videos":
-                        if not search_types.video:
-                            logging.error("missing search type 'video'")
-                            return False
-                        
-                    # search (channelId)-> channels
-                    case "channels":
-                        if not search_types.channel:
-                            logging.error("missing search type 'channel'")
-                            return False
-                        
-                    # search (playlistId)-> playlists
-                    case "playlists":
-                        if not search_types.playlist:
-                            logging.error("missing search type 'playlist'")
-                            return False
-            
-            foreman_name = next_foreman_name
             block = next_block
             block_count += 1
 

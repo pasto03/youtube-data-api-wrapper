@@ -151,19 +151,80 @@ class PipelineStacksConstructor:
         return stacks
 
 
+class PipelineBlockConstructor:
+    def __init__(self, 
+                 pipe_settings: PipeSettings = PipeSettings(max_page=1), 
+                 retriever_settings: RetrieverSettings = RetrieverSettings()):
+        self.pipe_settings = pipe_settings
+        self.retriever_settings = retriever_settings
+        self.block_type = PipelineBlock
+
+    def construct(self, notation: str) -> PipelineBlock:
+        """
+        `<foreman_name><modifier>?` to add modifiers
+        - modifier(<save_output | max_workers | max_page>): save_output to set the parameter as true, max_workers(n) and max_page(n) to set parameter a value
+        - Example: `channels<save_output max_workers(8)>` 
+        """
+        notation = notation.strip()
+        modifier = re.findall(r'\<(.*?)\>', notation)
+        
+        if modifier:
+            notation = notation.replace(f"<{modifier[0]}>", "")
+
+        if "search" in notation:
+            search_types: list[str] | None = re.findall(r'\((.*?)\)', notation)
+            if not search_types:
+                raise ValueError("search types not indicated")
+            search_types = search_types[0]
+            notation = notation.replace(f"({search_types})", "")
+            search_types = [i.strip() for i in search_types.split(",")]
+            
+            # every listed search types must match available search types
+            if not set(search_types) <= {"channel", "playlist", "video"}:
+                raise ValueError("Invalid search types passed. Only 'channel', 'playlist', or 'video' allowed.")
+            
+            block = self.block_type(
+                foreman=SearchForeman(
+                    types=SearchTypeCheckboxProps(**{search_type: True for search_type in search_types})
+                ),
+                pipe_settings=self.pipe_settings,
+                retriever_settings=self.retriever_settings,
+            )
+        else:
+            if not notation in get_args(ForemanName):
+                raise ValueError(f"'{notation}' is not in {ForemanName}")
+            pipe_settings = self.pipe_settings if notation in ["playlists", "playlist_items", "comments"] else None
+            block = self.block_type(
+                foreman=foreman_map[notation](),
+                pipe_settings=pipe_settings,
+                retriever_settings=self.retriever_settings,
+            )
+        
+        if modifier:
+            args = modifier[0].split(" ")
+            for arg in args:
+                if "max_workers" in arg:
+                    max_workers = re.findall(r'\((.*?)\)', arg)
+                    if not max_workers:
+                        raise ValueError('max_workers number should be specified with max_workers(n)')
+                    block.max_workers = int(max_workers[0])
+                elif "max_page" in arg and notation in ["search", "playlists", "playlist_items", "comments"]:
+                    max_page = re.findall(r'\((.*?)\)', arg)
+                    if not max_page:
+                        raise ValueError('max_page number should be specified with max_page(n)')
+                    block.pipe_settings = PipeSettings(max_page=int(max_page[0]))
+                    
+                elif arg == "save_output":
+                        block.save_output = True
+                else:
+                    raise ValueError(f"invalid modifier argument '{arg}' passed")
+                
+        return block
+
+
 class PipelineBlocksConstructor:
     """
     Create pipeline block connections with string declarations
-
-    ### Syntax
-    1. `<foreman_name> -> <foreman_name> -> ...` for normal block connections
-    - Example: `search -> channels -> playlists -> playlist_items`
-    2. `search(<search_types>)? -> <foreman_name> -> ...` to indicate search type
-    - search_types: "channel", "playlist", "video"
-    - Example: `search(channel,playlist) -> channels -> ...`
-    3. `<foreman_name> -> <foreman_name><modifier>? -> ...` to add modifiers
-    - modifier(<save_output | max_workers | max_page>): save_output to set the parameter as true, max_workers(n) and max_page(n) to set parameter a value
-    - Example: `search -> channels<save_output max_workers(8)> -> playlists` 
     """
     def __init__(self, 
                  pipe_settings: PipeSettings = PipeSettings(max_page=1), 
@@ -172,63 +233,26 @@ class PipelineBlocksConstructor:
         self.retriever_settings = retriever_settings
         
     def construct(self, notation: str) -> list[PipelineBlock]:
+        """
+        ### Syntax
+        1. `<foreman_name> -> <foreman_name> -> ...` for normal block connections
+        - Example: `search -> channels -> playlists -> playlist_items`
+        2. `search(<search_types>)? -> <foreman_name> -> ...` to indicate search type
+        - search_types: "channel", "playlist", "video"
+        - Example: `search(channel,playlist) -> channels -> ...`
+        3. `<foreman_name> -> <foreman_name><modifier>? -> ...` to add modifiers
+        - modifier(<save_output | max_workers | max_page>): save_output to set the parameter as true, max_workers(n) and max_page(n) to set parameter a value
+        - Example: `search -> channels<save_output max_workers(8)> -> playlists` 
+        """
         blocks: list[PipelineBlock] = []
+
+        block_constructor = PipelineBlockConstructor(
+            pipe_settings=self.pipe_settings, 
+            retriever_settings=self.retriever_settings
+        )
             
-        for foreman in notation.strip().split("->"):
-            foreman = foreman.strip()
-            modifier = re.findall(r'\<(.*?)\>', foreman)
-#             print("foreman:", foreman)
-#             print("modifier:", modifier)
-            
-            if modifier:
-                foreman = foreman.replace(f"<{modifier[0]}>", "")
-            
-            if "search" in foreman:
-                search_types = re.findall(r'\((.*?)\)', foreman)
-                if not search_types:
-                    raise ValueError("search types not indicated")
-                search_types = [i.strip() for i in search_types[0].split(",")]
-                
-                # every listed search types must match available search types
-                if not set(search_types) <= {"channel", "playlist", "video"}:
-                    raise ValueError("Invalid search types passed. Only 'channel', 'playlist', or 'video' allowed.")
-                
-                block = PipelineBlock(
-                    foreman=SearchForeman(
-                        types=SearchTypeCheckboxProps(**{search_type: True for search_type in search_types})
-                    ),
-                    pipe_settings=self.pipe_settings,
-                    retriever_settings=self.retriever_settings,
-                )
-            else:
-                if not foreman in get_args(ForemanName):
-                    raise ValueError(f"'{foreman}' is not in {ForemanName}")
-                pipe_settings = self.pipe_settings if foreman in ["playlists", "playlist_items", "comments"] else None
-                block = PipelineBlock(
-                    foreman=foreman_map[foreman](),
-                    pipe_settings=pipe_settings,
-                    retriever_settings=self.retriever_settings,
-                )
-            
-            if modifier:
-                args = modifier[0].split(" ")
-                for arg in args:
-                    if "max_workers" in arg:
-                        max_workers = re.findall(r'\((.*?)\)', arg)
-                        if not max_workers:
-                            raise ValueError('max_workers number should be specified with max_workers(n)')
-                        block.max_workers = int(max_workers[0])
-                    elif "max_page" in arg and foreman in ["playlists", "playlist_items", "comments"]:
-                        max_page = re.findall(r'\((.*?)\)', arg)
-                        if not max_page:
-                            raise ValueError('max_page number should be specified with max_page(n)')
-                        block.pipe_settings = PipeSettings(max_page=int(max_page[0]))
-                        
-                    elif arg == "save_output":
-                         block.save_output = True
-                    else:
-                        raise ValueError(f"invalid modifier argument '{arg}' passed")
-            
+        for n in notation.strip().split("->"):
+            block = block_constructor.construct(notation=n)
             blocks.append(block)
         
         return blocks

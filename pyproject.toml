@@ -15,7 +15,8 @@ license = { text = "MIT" }
 dependencies = [
     "tqdm",
     "google-api-python-client",
-    "isodate"
+    "isodate",
+    "anytree"
 ]
 
 [project.urls]
