@@ -21,7 +21,7 @@ from yt_pipeline.foreman.base import IterableForeman, UniqueForeman, BaseForeman
 from yt_pipeline.foreman import *
 
 
-Foreman = UniqueForeman | IterableForeman | BaseForeman
+Foreman = UniqueForeman | IterableForeman | BaseForeman | CaptionsForeman
 
 @dataclass
 class PipelineBlock:
@@ -48,6 +48,7 @@ class PipelineStacks:
 
 
 ForemanName = Literal["videos", "channels", "search", "playlists", "playlist_items", "comments", "captions"]
+InitialInputTypes = List[str] | List[SearchParamProps] | List[CaptionsParams]
 
 foreman_map: dict[ForemanName, Type[Foreman]] = {
             "videos": VideosForeman,
@@ -138,7 +139,6 @@ def validate_connection(parent: Foreman, child: Foreman, verbose=0):
 @dataclass
 class PipelineProduct:
     title: str = None
-    # items: List[dict] = None
     shipper: BaseShipper | CommentThreadsShipper = None
 
 
@@ -185,23 +185,17 @@ class Pipeline:
         self.stacks = stacks
         self.developerKey = developerKey
 
-        is_valid = self._validate_stacks()
-        if not is_valid: logging.error("pipeline is invalid")
-
+        self._validate_stacks()
     
     def _validate_initial_input(
             self, 
-            blocks: List[PipelineBlock],
-            initial_input: List[str] | List[SearchParamProps] | List[CaptionsParams]
+            first_foreman: Foreman,
+            initial_input: InitialInputTypes
         ):
         # 1.1 initial_input and blocks must be a list
         if not initial_input or not isinstance(initial_input, list):
             raise TypeError("initial_input must be a list")
-        
-        if not isinstance(blocks, list):
-            raise TypeError("blocks must be a list")
-        
-        first_foreman = blocks[0].foreman
+    
         # Case 1: foreman = SearchForeman, initial_input must be list[SearchParamProps]
         if isinstance(first_foreman, SearchForeman):
             if not all(isinstance(i, SearchParamProps) for i in initial_input):
@@ -221,8 +215,11 @@ class Pipeline:
         blocks = self.stacks.blocks
         initial_input = self.stacks.initial_input
 
+        if not isinstance(blocks, list):
+            raise TypeError("stacks.blocks must be a list")
+
         # 1. validate initial input
-        self._validate_initial_input(blocks=blocks, initial_input=initial_input)
+        self._validate_initial_input(first_foreman=blocks[0].foreman, initial_input=initial_input)
         
         # 2. validate blocks connections
         block_count = 0
@@ -230,12 +227,12 @@ class Pipeline:
 
         while True:
             if block_count + 1 == len(blocks):
-                return True
+                return
             
             next_block = blocks[block_count + 1]
 
             if not validate_connection(block.foreman, next_block.foreman):
-                return False
+                raise ValueError("invalid connection")
             
             block = next_block
             block_count += 1

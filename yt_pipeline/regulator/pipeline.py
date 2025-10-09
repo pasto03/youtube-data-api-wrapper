@@ -21,7 +21,7 @@ class PipelineRegulator:
                 return ChannelsEstimator().estimate(n_items)
             case "videos":
                 return VideosEstimator().estimate(n_items)
-            case "comment_threads":
+            case "comments":
                 return CommentThreadsEstimator().estimate(n_items, settings, estimate_output_count=True)
             case "playlist_items":
                 return PlaylistItemsEstimator().estimate(n_items, settings, estimate_output_count=True)

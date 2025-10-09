@@ -73,7 +73,7 @@ class BaseRetriever:
                ) -> list[dict] | list[list[dict]] | tuple[list[dict] | list[list[dict]], HttpErrorContainer | Exception]:
         
         pipes = self._create_pipes()
-        
+
         # multithread mode
         if multithread:            
             results = multithreading_run_pipe(

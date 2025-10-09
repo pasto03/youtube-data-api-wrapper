@@ -87,7 +87,7 @@ class PipelineEstimator:
                 result.quota_usage = estimator.estimate(n_items)
                 result.n_output = n_items
                 
-            case "comment_threads":
+            case "comments":
                 estimator = CommentThreadsEstimator()
                 result.quota_usage, result.n_output = estimator.estimate(
                     n_items, settings, estimate_output_count=True

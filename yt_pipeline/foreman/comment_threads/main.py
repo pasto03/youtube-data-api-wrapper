@@ -15,7 +15,7 @@ class CommentThreadsForeman(IterableForeman):
         self.retriever = CommentThreadsRetriever
         self.container = CommentThreadsContainer
         self.shipper = CommentThreadsShipper
-        self.name = "comment_threads"
+        self.name = "comments"
 
     def _pack(self, raw_items: list[dict]) -> CommentThreadsContainer:
         return super()._pack(raw_items)
