@@ -1,3 +1,4 @@
-from .main import show_pipeline_tree, PipelineBlockNode, BranchedPipelineStacks, BranchedPipeline
+from .main import BranchedPipeline
+from .props import PipelineBlockNode, BranchedPipelineStacks
 from .constructor import PipelineBlockNodeConstructor
-from .estimator import BranchedPipelineEstimator
+from .estimator.main import BranchedPipelineEstimator

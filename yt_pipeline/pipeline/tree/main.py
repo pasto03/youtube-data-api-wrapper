@@ -8,137 +8,40 @@ from typing import Optional, List
 
 from anytree import Node as AnyNode, RenderTree
 
-from yt_pipeline.pipeline.main import Foreman, InitialInputTypes, PipelineBlock, PipelineStacks, validate_connection, Pipeline, PipelineProduct, PipelineDeliverable, block_access_func_map, reverse_foreman_map, ForemanName
+from yt_pipeline.pipeline.props import Foreman, InitialInputTypes, PipelineBlock, PipelineStacks, block_access_func_map, reverse_foreman_map, ForemanName
+from yt_pipeline.pipeline.main import Pipeline
+from yt_pipeline.pipeline.base import PipelineProduct, PipelineExecutionRecorder
+from yt_pipeline.pipeline.tree.estimator.props import PipelineExecutionStageNode, BranchedPipelineExecutionReport
+from yt_pipeline.pipeline.tree.props import PipelineBlockNode, BranchedPipelineStacks
+
 from yt_pipeline.shipper import CommentThreadsShipper
-from yt_pipeline.retriever import PipeSettings, RetrieverSettings, SearchParamProps
-from yt_pipeline.retriever.captions.params import CaptionsParams
+from yt_pipeline.retriever import PipeSettings, RetrieverSettings
 from yt_pipeline.container.search.main import SearchItem
 from yt_pipeline.container.videos.main import VideoItem
 
 VALIDATE_CONNNECTION_VERBOSE = 1
 
+class BranchedPipelineExecutionRecorder(PipelineExecutionRecorder):
+    def __init__(self):
+        self.report = BranchedPipelineExecutionReport()
+        self.stage_type = PipelineExecutionStageNode
 
-@dataclass
-class PipelineBlockNode(PipelineBlock):
-    """
-    Represents a single block node in a data processing pipeline.
-    """
-    links: list['PipelineBlockNode'] = field(default_factory=list)
+    def _estimate_block_cost(self, n_items: int, worker_name: str, 
+                             settings: Optional[PipeSettings] = None) -> PipelineExecutionStageNode:
+        return super()._estimate_block_cost(n_items=n_items, worker_name=worker_name, settings=settings)
     
-    def has_descendant(self, node, target):
-        """
-        check if target node in parent's descendant
-        """
-        if not node.links:
-            return False
-        for child in node.links:
-            if child is target:
-                return True
-            if self.has_descendant(child, target):
-                return True
-        return False
-
-    def validate_link(self, parent, child):
-        """
-        validate parent -> child
-        Any connection that forms a cycle is not allowed.
-        """
-        if self.has_descendant(child, parent):
-            logging.error(f"Cannot link {child} → {parent}: would create a cycle!")
-            return False
-        return True
-
-        
-    def connect(self, 
-                child: 'PipelineBlockNode' | str,
-                pipe_settings: Optional[PipeSettings] = PipeSettings(),
-                retriever_settings: Optional[RetrieverSettings] = None
-                ) -> 'PipelineBlockNode':
-        """
-        Connect current node with child node provided. 
-        
-        Child node is returned.
-        """
-        if isinstance(child, str):
-            from .constructor import PipelineBlockNodeConstructor
-            # automatically inherit settings from parent node or use default if settings not specified
-            pipe_settings = pipe_settings or self.pipe_settings
-            retriever_settings = retriever_settings or self.retriever_settings
-            constructor = PipelineBlockNodeConstructor(pipe_settings=pipe_settings, retriever_settings=retriever_settings)
-            child = constructor.construct(child)
-
-        if not isinstance(child, PipelineBlockNode):
-            raise TypeError("invalid child type passed")
-        
-        # self linked is not allowed
-        if child == self:
-            logging.error(f"Cannot link with self: would create a cycle!")
-            return None
-        
-        # validate connection
-        if not validate_connection(parent=self.foreman, child=child.foreman, verbose=VALIDATE_CONNNECTION_VERBOSE):
-            return None
-        
-        # check if link cycle exists 
-        if self.validate_link(parent=self, child=child):  
-            self.links.append(child)
-            return child
-        return None
-    
-    def remove_links(self):
-        """
-        remove all links from the current node
-        """
-        self.links = []
-
-    def display(self):
-        """
-        print pipeline tree from current node
-        """
-        return show_pipeline_tree(self)
-
-
-@dataclass
-class BranchedPipelineStacks(PipelineStacks):
-    head: 'PipelineBlockNode' = None
-
-
-def pipeline_to_anytree(head: 'PipelineBlockNode'):
-    """
-    Convert PipelineBlockNode tree structure to anytree
-    arguments:
-        head: PipelineBlockNode
-    return:
-        anytree.Node
-    """
-    # use foreman class name or custom name as node name
-    name = getattr(head, "name", None) or type(head.foreman).__name__
-    anynode = AnyNode(name=name)
-
-    for child in head.links:
-        child_anynode = pipeline_to_anytree(child)
-        child_anynode.parent = anynode
-
-    return anynode
-
-
-def show_pipeline_tree(head: 'PipelineBlockNode'):
-    """
-    print pipeline tree
-    """
-    anyroot = pipeline_to_anytree(head)
-    for pre, fill, node in RenderTree(anyroot):
-        print(f"{pre}{node.name}")
+    def record_stage(self, block, n_input, n_output, verbose=0):
+        raise NotImplementedError()
 
 
 @dataclass
 class PipelineProductNode(PipelineProduct):
     links: list[PipelineProductNode] = field(default_factory=list)
 
-
 @dataclass
 class BranchedPipelineDeliverable:
     head_product: PipelineProductNode = None
+    report: BranchedPipelineExecutionReport = None
         
     def _get_product_record(self, product: PipelineProductNode):
         record = dict()
@@ -184,13 +87,14 @@ class BranchedPipelineDeliverable:
         
         else:
             return output
-    
+
 
 class BranchedPipeline(Pipeline):
     def __init__(self, stacks: BranchedPipelineStacks, developerKey: str):
         # super().__init__(stacks=stacks, developerKey=developerKey)
         self.stacks: BranchedPipelineStacks = stacks
         self.developerKey = developerKey
+        self.recorder = BranchedPipelineExecutionRecorder()
 
         self._validate_stacks()
 
@@ -283,7 +187,6 @@ class BranchedPipeline(Pipeline):
         # return shipper
         return box
     
-
     def _execute_node(self, node: PipelineBlockNode, iterable: list):
         foreman = node.foreman
         pipe_settings = node.pipe_settings
@@ -300,11 +203,15 @@ class BranchedPipeline(Pipeline):
                 backup_shipper=backup_shipper, max_workers=max_workers, debug=debug, save_output=node.save_output
             )
         
-        product = PipelineProductNode(title=node.foreman.name)
+        product = PipelineProductNode(title=foreman.name)
         child_products: list[PipelineProductNode] = list()
 
+        stage_report = self.recorder._estimate_block_cost(n_items=len(iterable), worker_name=foreman.name, settings=pipe_settings)
+        self.recorder.report.overall_cost += stage_report.quota_usage
+        self.recorder.report.head_stage
+        child_stages = list()
+
         child_nodes = node.links
-        # print(f"child_nodes: {[i.foreman.name for i in child_nodes]}")
 
         if child_nodes:
             for child_node in child_nodes:
@@ -314,18 +221,31 @@ class BranchedPipeline(Pipeline):
 
                 next_foreman = child_node.foreman
                 if items:
+                    stage_report.n_output = len(items)
                     next_iterable = self.__extract_next_input(
                         items=items, 
                         current_foreman_name=foreman.name, 
                         next_foreman_name=next_foreman.name
                     )
+                    # logging.info(f"length(next_iterable): {len(next_iterable)}")
                     if next_iterable:
-                        child_products.append(self._execute_node(node=child_node, iterable=next_iterable))
+                        child_product, child_stage_report = self._execute_node(node=child_node, iterable=next_iterable)
+                        child_products.append(child_product)
+                        child_stages.append(child_stage_report)
+
             product.links = child_products
+            stage_report.links = child_stages
+
+        else:
+            items = box.items
+            logging.info("{} item(s) retrieved.".format(len(items)))
+
+            if items:
+                stage_report.n_output = len(items)
 
         if node.save_output:
             product.shipper = foreman._ship(box=box)
-        return product
+        return product, stage_report
 
     
     def invoke(self) -> BranchedPipelineDeliverable | None:
@@ -333,8 +253,13 @@ class BranchedPipeline(Pipeline):
         """
         start = time.time()
 
-        head_product = self._execute_node(node=self.stacks.head, iterable=self.stacks.initial_input)
-        dlv = BranchedPipelineDeliverable(head_product=head_product)
+        head_product, head_stage = self._execute_node(node=self.stacks.head, iterable=self.stacks.initial_input)
+        self.recorder.report.head_stage = head_stage
+        dlv = BranchedPipelineDeliverable(
+            head_product=head_product,
+            report=self.recorder.report
+        )
+        # dlv.report = BranchedPipelineExecutionReport(head_stage=)
 
         end = time.time()
         logging.info("Execution time: {:.2f}s".format(end-start))

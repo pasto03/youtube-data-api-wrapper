@@ -6,7 +6,8 @@ from typing import get_args
 import logging
 from copy import deepcopy
 
-from .main import Pipeline, PipelineBlock, PipelineStacks, foreman_map, reverse_foreman_map, available_block_map, ForemanName
+from .main import Pipeline
+from .props import PipelineBlock, PipelineStacks, foreman_map, reverse_foreman_map, available_block_map, ForemanName
 from yt_pipeline.foreman import *
 from yt_pipeline.foreman.base import UniqueForeman, IterableForeman, BaseForeman
 from yt_pipeline.retriever.search import SearchTypeCheckboxProps, SearchParamProps

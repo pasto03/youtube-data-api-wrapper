@@ -1,28 +1,48 @@
-from dataclasses import dataclass, field, asdict
-from typing import Optional, Literal
+import time
+import json
+from typing import TypeAlias, Literal, Optional, List, Type
+from dataclasses import dataclass, asdict, field
+
 import logging
+logging.basicConfig(level=logging.INFO)
 
-from yt_pipeline.retriever.base import PipeSettings
-from yt_pipeline.foreman.base import IterableForeman, UniqueForeman
 
+from yt_pipeline.retriever.search import SearchParamProps
+from yt_pipeline.retriever.base import PipeSettings, RetrieverSettings
+from yt_pipeline.retriever.captions import CaptionsParams
+from yt_pipeline.container.videos.main import VideoItem
+from yt_pipeline.container.search.main import SearchItem
+from yt_pipeline.shipper import CommentThreadsShipper
+from yt_pipeline.shipper.base import BaseShipper
+from yt_pipeline.foreman.base import IterableForeman, UniqueForeman, BaseForeman
+from yt_pipeline.foreman import *
 from yt_pipeline.regulator.estimator import (ChannelsEstimator, VideosEstimator, CaptionsEstimator, PlaylistEstimator, 
                                              SearchEstimator, PlaylistItemsEstimator, CommentThreadsEstimator)
+from yt_pipeline.pipeline.types import PipelineEstimationStage, PipelineForemanDetails, PipelineEstimationReport
+from yt_pipeline.pipeline.props import reverse_foreman_map, PipelineBlock
 
-from yt_pipeline.pipeline.types import PipelineEstimationStage, PipelineForemanDetails, EstimationReportMetrics, PipelineEstimationReport
+@dataclass
+class PipelineProduct:
+    title: str = None
+    shipper: BaseShipper | CommentThreadsShipper = None
 
 
-class PipelineEstimator:
-    """
-    Estimates total quota cost and I/O volumes for a pipeline
-    """
-    from yt_pipeline.pipeline.main import Pipeline, PipelineBlock
-    def __init__(self, pipeline: 'Pipeline'):
-        self.pipeline = pipeline
-        self.stage_type = PipelineEstimationStage
+@dataclass
+class PipelineExecutionStage(PipelineEstimationStage):
+    ...
+
+@dataclass
+class PipelineExecutionReport(PipelineEstimationReport):
+    ...
+
+
+class PipelineExecutionRecorder:
+    def __init__(self):
+        self.report = PipelineExecutionReport()
+        self.stage_type = PipelineExecutionStage
 
     def _estimate_block_cost(self, n_items: int, worker_name: str, 
-                             settings: Optional[PipeSettings] = None) -> PipelineEstimationStage:
-#         result = dict()
+                             settings: Optional[PipeSettings] = None) -> PipelineExecutionStage:
         result = self.stage_type()
         result.n_input = n_items
     
@@ -77,43 +97,25 @@ class PipelineEstimator:
             result.item_multiplier = 1
             
         return result
-    
-    def _estimate_stage(self, idx: int, block: PipelineBlock, n_items: int, verbose=0):
-        from yt_pipeline.pipeline.main import reverse_foreman_map
-        foreman = block.foreman
 
-        logging.debug("\nBlock {}: {}".format(idx, block))
+    def record_stage(self, block: PipelineBlock, n_input: int, n_output: int, verbose=0):
+        foreman = block.foreman
 
         if verbose:
             logging.info("foreman: {}".format(reverse_foreman_map[type(foreman)]))
 
         kwargs = {"settings": block.pipe_settings} if block.pipe_settings else {}
-        stage_result = self._estimate_block_cost(n_items, worker_name=foreman.name, **kwargs)
+        stage_result = self._estimate_block_cost(n_items=n_input, worker_name=foreman.name, **kwargs)
         stage_result.max_page = block.pipe_settings.max_page if block.pipe_settings else None
 
+        stage_result.n_output = n_output
+
         if verbose:
-            logging.info(f"{'Estimated input count  :':<25} {n_items}")
-            logging.info(f"{'Estimated output count :':<25} {stage_result.n_output}")
-            logging.info(f"{'Estimated quota usage  :':<25} {stage_result.quota_usage}")
+            logging.info(f"{'Input count  :':<25} {n_input}")
+            logging.info(f"{'Output count :':<25} {stage_result.n_output}")
+            logging.info(f"{'Calculated quota usage  :':<25} {stage_result.quota_usage}")
             
-        n_items = stage_result.n_output    
-            
-        return stage_result, n_items
-
-    def estimate(self, verbose=0) -> PipelineEstimationReport:
-        stacks = self.pipeline.stacks
-        n_items = len(stacks.initial_input)
         
-        report = PipelineEstimationReport()
-
-        for idx, block in enumerate(stacks.blocks):
-            stage_result, n_items = self._estimate_stage(idx=idx, block=block, n_items=n_items, verbose=verbose)
-            
-            report.overall_cost += stage_result.quota_usage
-            stage_result.staged_quota_cost = report.overall_cost
-
-            report.stages.append(stage_result)
-        
-        logging.info(f"{'Overall estimated quota usage :':<25} {report.overall_cost}")
-
-        return report
+        # record stage output to report
+        self.report.overall_cost += stage_result.quota_usage
+        self.report.stages.append(stage_result)
