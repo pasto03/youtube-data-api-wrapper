@@ -19,7 +19,7 @@ class PipeSettings:
     """
     retrieval: RetrieveMethod = "all"
     n: int = 50
-    max_page: int = 5
+    max_page: int = 1
         
     def to_dict(self):
         return {k:v for k, v in asdict(self).items() if v is not None}
