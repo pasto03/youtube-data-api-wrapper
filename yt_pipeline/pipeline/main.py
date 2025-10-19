@@ -108,7 +108,7 @@ class PipelineErrorContainer:
     container for fatal error
     """
     error_source: ForemanName = None
-    error: list[HttpErrorContainer | Exception] = None
+    error: list[HttpErrorContainer | Exception] = field(default_factory=list)
 
 
 class Pipeline:
@@ -239,13 +239,17 @@ class Pipeline:
         ):
         kwargs = {"pipe_settings": pipe_settings} if pipe_settings is not None else {}
 
-        box = foreman.invoke(iterable=iterable, developerKey=self.developerKey, 
-                        retriever_settings=retriever_settings, backup_shipper=backup_shipper, 
-                        max_workers=max_workers, debug=debug, as_box=True, **kwargs)
-        
-        self.pipeline_errors.error_source = reverse_foreman_map[type(foreman)]
-        self.pipeline_errors.error = foreman.errors
-        return box
+        try:
+            box = foreman.invoke(iterable=iterable, developerKey=self.developerKey, 
+            retriever_settings=retriever_settings, backup_shipper=backup_shipper, 
+            max_workers=max_workers, debug=debug, as_box=True, **kwargs)
+            
+            self.pipeline_errors.error_source = reverse_foreman_map[type(foreman)]
+            self.pipeline_errors.error = foreman.errors
+            return box
+        except Exception as e:
+            self.pipeline_errors.error_source = reverse_foreman_map[type(foreman)]
+            self.pipeline_errors.error = [e]
 
 
     def invoke(self) -> PipelineDeliverable | None:
@@ -339,6 +343,11 @@ class Pipeline:
                                         pipe_settings=pipe_settings, retriever_settings=retriever_settings,
                                         backup_shipper=backup_shipper, max_workers=max_workers,
                                         debug=debug)
+            
+            # Check for fatal errors
+            if (not box) or self.pipeline_errors.error:
+                logging.error(f"Fatal error occured. Pipeline halted")
+                return dlv
 
             items = box.items
             if not items:
