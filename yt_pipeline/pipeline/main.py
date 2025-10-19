@@ -16,15 +16,11 @@ from yt_pipeline.retriever.base import PipeSettings, RetrieverSettings
 from yt_pipeline.retriever.captions import CaptionsParams
 from yt_pipeline.container.videos.main import VideoItem
 from yt_pipeline.container.search.main import SearchItem
+from yt_pipeline.container import HttpErrorContainer
 from yt_pipeline.shipper import CommentThreadsShipper
-from yt_pipeline.shipper.base import BaseShipper
-from yt_pipeline.foreman.base import IterableForeman, UniqueForeman, BaseForeman
 from yt_pipeline.foreman import *
-from yt_pipeline.regulator.estimator import (ChannelsEstimator, VideosEstimator, CaptionsEstimator, PlaylistEstimator, 
-                                             SearchEstimator, PlaylistItemsEstimator, CommentThreadsEstimator)
-from yt_pipeline.pipeline.types import PipelineEstimationStage, PipelineForemanDetails, EstimationReportMetrics, PipelineEstimationReport
 from yt_pipeline.pipeline.props import Foreman, PipelineBlock, PipelineStacks, ForemanName, InitialInputTypes, foreman_map, reverse_foreman_map, available_block_map, block_access_func_map
-from yt_pipeline.pipeline.base.main import PipelineProduct, PipelineExecutionStage, PipelineExecutionReport, PipelineExecutionRecorder
+from yt_pipeline.pipeline.base.main import PipelineProduct, PipelineExecutionReport, PipelineExecutionRecorder
 
 
 def validate_connection(parent: Foreman, child: Foreman, verbose=0):
@@ -105,10 +101,22 @@ class PipelineDeliverable:
         else:
             return output
 
+
+@dataclass
+class PipelineErrorContainer:
+    """
+    container for fatal error
+    """
+    error_source: ForemanName = None
+    error: list[HttpErrorContainer | Exception] = field(default_factory=list)
+
+
 class Pipeline:
     def __init__(self, stacks: PipelineStacks, developerKey: str):
         self.stacks = stacks
         self.developerKey = developerKey
+
+        self.pipeline_errors = PipelineErrorContainer()
 
         self._validate_stacks()
     
@@ -231,13 +239,17 @@ class Pipeline:
         ):
         kwargs = {"pipe_settings": pipe_settings} if pipe_settings is not None else {}
 
-        box = foreman.invoke(iterable=iterable, developerKey=self.developerKey, 
-                        retriever_settings=retriever_settings, backup_shipper=backup_shipper, 
-                        max_workers=max_workers, debug=debug, as_box=True, **kwargs)
-        
-        # shipper = foreman._ship(box) if save_output else None
-        # return shipper
-        return box
+        try:
+            box = foreman.invoke(iterable=iterable, developerKey=self.developerKey, 
+            retriever_settings=retriever_settings, backup_shipper=backup_shipper, 
+            max_workers=max_workers, debug=debug, as_box=True, **kwargs)
+            
+            self.pipeline_errors.error_source = reverse_foreman_map[type(foreman)]
+            self.pipeline_errors.error = foreman.errors
+            return box
+        except Exception as e:
+            self.pipeline_errors.error_source = reverse_foreman_map[type(foreman)]
+            self.pipeline_errors.error = [e]
 
 
     def invoke(self) -> PipelineDeliverable | None:
@@ -331,6 +343,11 @@ class Pipeline:
                                         pipe_settings=pipe_settings, retriever_settings=retriever_settings,
                                         backup_shipper=backup_shipper, max_workers=max_workers,
                                         debug=debug)
+            
+            # Check for fatal errors
+            if (not box) or self.pipeline_errors.error:
+                logging.error(f"Fatal error occured. Pipeline halted")
+                return dlv
 
             items = box.items
             if not items:
