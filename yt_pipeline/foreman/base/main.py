@@ -12,7 +12,6 @@ class BaseForeman:
     Base foreman class
     """
     def __init__(self):
-        super().__init__()
         self.retriever = BaseRetriever
         self.container = BaseContainer
         self.shipper = BaseShipper
@@ -73,6 +72,7 @@ class UniqueForeman(BaseForeman):
     Base foreman class for batch retrievers
     """
     def __init__(self):
+        super().__init__()
         self.retriever = UniqueRetriever
         self.name = "unique"
 
