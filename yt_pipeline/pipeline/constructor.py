@@ -165,6 +165,9 @@ class PipelineBlockConstructor:
         `<foreman_name><modifier>?` to add modifiers
         - modifier(<save_output | max_workers | max_page>): save_output to set the parameter as true, max_workers(n) and max_page(n) to set parameter a value
         - Example: `channels<save_output max_workers(8)>` 
+        
+        For SearchForeman, use `search(<types>)` to pass types parameters; available types are `video`, `channel`, `playlist`
+        - Example: `search(video,channel,playlist)<save_output>`
         """
         notation = notation.strip()
         modifier = re.findall(r'\<(.*?)\>', notation)

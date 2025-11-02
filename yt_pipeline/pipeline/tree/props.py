@@ -74,10 +74,11 @@ class PipelineBlockNode(PipelineBlock):
         
         # validate connection
         if not validate_connection(parent=self.foreman, child=child.foreman, verbose=VALIDATE_CONNNECTION_VERBOSE):
-            return None
+            raise ValueError("Invalid Connection")
         
         # check if link cycle exists 
-        if self.validate_link(parent=self, child=child):  
+        if self.validate_link(parent=self, child=child):
+            # logging.info(f"nodes connected: {type(self.foreman).__name__} - {type(child.foreman).__name__}")
             self.links.append(child)
             return child
         return None
@@ -88,7 +89,8 @@ class PipelineBlockNode(PipelineBlock):
         """
         self.links = []
 
-    def _pipeline_to_anytree(self):
+    @staticmethod
+    def _pipeline_to_anytree(node: 'PipelineBlockNode'):
         """
         Convert PipelineBlockNode tree structure to anytree
         arguments:
@@ -97,11 +99,11 @@ class PipelineBlockNode(PipelineBlock):
             anytree.Node
         """
         # use foreman class name or custom name as node name
-        name = getattr(self, "name", None) or type(self.foreman).__name__
+        name = getattr(node, "name", None) or type(node.foreman).__name__
         anynode = AnyNode(name=name)
 
-        for child in self.links:
-            child_anynode = self._pipeline_to_anytree(child)
+        for child in node.links:
+            child_anynode = node._pipeline_to_anytree(child)
             child_anynode.parent = anynode
 
         return anynode
