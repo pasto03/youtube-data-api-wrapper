@@ -1,4 +1,4 @@
-from typing import Literal, Optional, List, Type
+from typing import Literal, Optional, List, Tuple, Type
 from dataclasses import dataclass
 
 import logging
@@ -12,6 +12,7 @@ from yt_pipeline.foreman import *
 
 
 Foreman = UniqueForeman | IterableForeman | BaseForeman | CaptionsForeman
+InitialInputTypes = List[str] | List[SearchParamProps] | List[CaptionsParams]
 
 @dataclass
 class PipelineBlock:
@@ -32,13 +33,13 @@ class PipelineStacks:
     """
     Represents a complete pipeline composed of sequential processing blocks.
     """
-    initial_input: List[str] | List[SearchParamProps] | List[CaptionsParams] = None
+    initial_input: InitialInputTypes = None
     blocks: List[PipelineBlock] = None
     backup: bool = False
 
 
 ForemanName = Literal["videos", "channels", "search", "playlists", "playlist_items", "comments", "captions"]
-InitialInputTypes = List[str] | List[SearchParamProps] | List[CaptionsParams]
+
 
 foreman_map: dict[ForemanName, Type[Foreman]] = {
             "videos": VideosForeman,
@@ -55,7 +56,7 @@ reverse_foreman_map: dict[Type[Foreman], ForemanName] = {v: k for k, v in forema
 available_block_map: dict[ForemanName, list[ForemanName]] = {
     "videos": ["comments", "captions"],
     "channels": ["playlists"],
-    "search": ["videos", "channels", "playlists"],
+    "search": ["videos", "channels", "playlists", "search", "playlist_items"],
     "playlists": ["playlist_items"],
     "playlist_items": ["videos"]
 }
@@ -72,7 +73,9 @@ block_access_func_map = {
     "search": {
         "videos": lambda x: x.id.videoId,
         "channels": lambda x: x.id.channelId,
-        "playlists": lambda x: x.id.playlistId
+        "playlists": lambda x: x.id.playlistId,
+        "search": lambda x: x.id.channelId,
+        "playlist_items": lambda x: x.id.playlistId
     },
     "playlists": {
         "playlist_items": lambda x: x.id
