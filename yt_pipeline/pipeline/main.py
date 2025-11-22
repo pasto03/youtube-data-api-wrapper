@@ -4,10 +4,12 @@ a pipeline with allows muitiple steps of data retrieval
 from __future__ import annotations
 import time
 import json
-from typing import TypeAlias, Literal, Optional, List, Type
+from typing import Tuple, TypeAlias, Literal, Optional, List, Type
 from dataclasses import dataclass, asdict, field
 
 import logging
+
+from yt_pipeline.retriever.search.params import OrderProps, VideoDurationProps
 logging.basicConfig(level=logging.INFO)
 
 
@@ -118,6 +120,10 @@ class Pipeline:
 
         self.pipeline_errors = PipelineErrorContainer()
 
+        self._videoDuration: VideoDurationProps = "any"
+        self._order: OrderProps = "relevance"
+        self._publishedAfter: str | None = None
+
         self._validate_stacks()
     
     def _validate_initial_input(
@@ -150,6 +156,9 @@ class Pipeline:
 
         if not isinstance(blocks, list):
             raise TypeError("stacks.blocks must be a list")
+
+        if not len(blocks) >= 2:
+            raise ValueError("stack.blocks should have at least length of 2")
 
         # 1. validate initial input
         self._validate_initial_input(first_foreman=blocks[0].foreman, initial_input=initial_input)
@@ -220,6 +229,21 @@ class Pipeline:
                     if i.id.kind == "youtube#video":
                         # print(i.id)
                         iterable.append(i.id.videoId)
+
+            elif next_foreman_name == "search":
+                for i in items:
+                    if i.id.kind == "youtube#channel":
+                        iterable.append(SearchParamProps(
+                            q="", channelId=i.id.channelId, 
+                            videoDuration=self._videoDuration, 
+                            order=self._order, 
+                            publishedAfter=self._publishedAfter
+                        ))
+
+            elif next_foreman_name == "playlist_items":
+                for i in items:
+                    if i.id.kind == "youtube#playlist":
+                        iterable.append(i.id.playlistId)
 
             else:
                 logging.error("Invalid foreman name passed. This should have been filtered by validate_stacks() unless it is not working properly")
@@ -327,8 +351,6 @@ class Pipeline:
             block = blocks[block_count]
             logging.debug("\nBlock {} | block object: {}".format(block_count, block))
 
-            # print("Current iterable: {}\n".format(iterable))
-
             foreman = block.foreman
 
             pipe_settings = block.pipe_settings
@@ -336,8 +358,6 @@ class Pipeline:
             backup_shipper = block.backup_shipper
             max_workers = block.max_workers
             debug = block.debug
-
-            # print(backup_shipper)
 
             box = self._execute_foreman(iterable=iterable, foreman=foreman,
                                         pipe_settings=pipe_settings, retriever_settings=retriever_settings,
@@ -379,9 +399,9 @@ class Pipeline:
                 dlv.products.append(product)
             
             next_block = blocks[block_count + 1]
-            next_foreman_name = reverse_foreman_map[type(next_block.foreman)]
-            
+
             # extract iterable for next block
+            next_foreman_name = reverse_foreman_map[type(next_block.foreman)]
             current_foreman_name = reverse_foreman_map[type(block.foreman)]
 
             iterable = self.__extract_next_input(items=items, 

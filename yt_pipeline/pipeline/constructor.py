@@ -6,6 +6,8 @@ from typing import get_args
 import logging
 from copy import deepcopy
 
+from yt_pipeline.retriever.search.params import OrderProps
+
 from .main import Pipeline
 from .props import PipelineBlock, PipelineStacks, foreman_map, reverse_foreman_map, available_block_map, ForemanName
 from yt_pipeline.foreman import *
@@ -163,8 +165,9 @@ class PipelineBlockConstructor:
     def construct(self, notation: str) -> PipelineBlock:
         """
         `<foreman_name><modifier>?` to add modifiers
-        - modifier(<save_output | max_workers | max_page>): save_output to set the parameter as true, max_workers(n) and max_page(n) to set parameter a value
-        - Example: `channels<save_output max_workers(8)>` 
+        - modifier(<save_output | max_workers | max_page>): 
+            - save_output: set the parameter as true. Example: `videos<save_output>`
+            - max_workers(n), max_page(n): set parameter a value. Example: `channels<max_workers(8)>`, `playlists(max_page(5))`
         
         For SearchForeman, use `search(<types>)` to pass types parameters; available types are `video`, `channel`, `playlist`
         - Example: `search(video,channel,playlist)<save_output>`
@@ -217,7 +220,6 @@ class PipelineBlockConstructor:
                     if not max_page:
                         raise ValueError('max_page number should be specified with max_page(n)')
                     block.pipe_settings = PipeSettings(max_page=int(max_page[0]))
-                    
                 elif arg == "save_output":
                         block.save_output = True
                 else:
