@@ -157,9 +157,6 @@ class Pipeline:
         if not isinstance(blocks, list):
             raise TypeError("stacks.blocks must be a list")
 
-        if not len(blocks) >= 2:
-            raise ValueError("stack.blocks should have at least length of 2")
-
         # 1. validate initial input
         self._validate_initial_input(first_foreman=blocks[0].foreman, initial_input=initial_input)
         
