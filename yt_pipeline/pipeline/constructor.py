@@ -214,6 +214,9 @@ class PipelineBlockConstructor:
             max_page_specified = False
             n_specified = False
             for arg in args:
+                if arg == "save_output":
+                    block.save_output = True
+                    continue
                 if "max_workers" in arg:
                     max_workers = re.findall(r'\((.*?)\)', arg)
                     if not max_workers:
@@ -237,8 +240,6 @@ class PipelineBlockConstructor:
                             raise ValueError('n number should be specified with n(n)')
                         block.pipe_settings = PipeSettings(n=int(n[0]), retrieval="custom")
                         n_specified = True
-                elif arg == "save_output":
-                    block.save_output = True
                 else:
                     raise ValueError(f"invalid modifier argument '{arg}' passed")
                 
