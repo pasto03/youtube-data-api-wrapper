@@ -166,13 +166,28 @@ class PipelineBlockConstructor:
 
     def construct(self, notation: str) -> PipelineBlock:
         """
-        `<foreman_name><modifier>?` to add modifiers
-        - modifier(<save_output | max_workers | max_page>): 
-            - save_output: set the parameter as true. Example: `videos<save_output>`
-            - max_workers(n), max_page(n): set parameter a value. Example: `channels<max_workers(8)>`, `playlists(max_page(5))`
+        Constructs a PipelineBlock from a compact notation describing a foreman and optional modifiers.
         
-        For SearchForeman, use `search(<types>)` to pass types parameters; available types are `video`, `channel`, `playlist`
-        - Example: `search(video,channel,playlist)<save_output>`
+        The notation supports:
+        - Foreman names (e.g. "channels", "playlists", "comments") or a search form: "search(type[,type...])".
+        - Optional modifiers inside angle brackets, separated by spaces: "<save_output max_workers(n) max_page(n) n(n)>".
+          - save_output: sets block.save_output to True.
+          - max_workers(n): sets block.max_workers to n.
+          - max_page(n) or n(n): applied only for iterable foremen (search, playlists, playlist_items, comments);
+            max_page sets PipeSettings(max_page=n), n sets PipeSettings(n=n, retrieval="custom"). max_page and n cannot be combined.
+        
+        Parameters:
+            notation (str): Notation string that names the foreman and may include parameters and modifiers.
+        
+        Returns:
+            PipelineBlock: The configured PipelineBlock instance described by the notation.
+        
+        Raises:
+            ValueError: If search types are missing or contain invalid entries (allowed: "channel", "playlist", "video").
+            ValueError: If the foreman name is not recognized.
+            ValueError: If a modifier requiring an argument lacks one (e.g., max_workers(n), max_page(n), n(n)).
+            ValueError: If both max_page and n are specified for the same block.
+            ValueError: If an invalid modifier or modifier argument is provided for the given foreman.
         """
         notation = notation.strip()
         modifier = re.findall(r'\<(.*?)\>', notation)
