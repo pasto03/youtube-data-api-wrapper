@@ -222,6 +222,7 @@ class PipelineBlockConstructor:
                     if not max_workers:
                         raise ValueError('max_workers number should be specified with max_workers(n)')
                     block.max_workers = int(max_workers[0])
+                    block.retriever_settings.multithread = True if int(max_workers[0]) > 1 else False
                 elif notation in ["search", "playlists", "playlist_items", "comments"]:
                     # do not allow max_page and n to be specified together
                     if "max_page" in arg:
