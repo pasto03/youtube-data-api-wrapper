@@ -5,10 +5,11 @@ __pycache__
 TEST.py
 backup
 
-/tests_v1_0
-/tests_v1_1
-/tests_v1_2
-/tests_v1_3
+/tests_*
+# /tests_v1_0
+# /tests_v1_1
+# /tests_v1_2
+# /tests_v1_3
 /dev_tests
 /dev
 
