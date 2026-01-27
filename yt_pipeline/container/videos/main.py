@@ -91,7 +91,7 @@ class VideosContainer(BaseContainer):
             item.contentDetails = self._extract_content_details(deepcopy(content_details_item))
             
             statistics_item = r['statistics']
-            item.statistics = VideoItemStatistics(**statistics_item)
+            item.statistics = self._extract_statistics(deepcopy(statistics_item))
             
             items.append(item)
             
@@ -126,3 +126,14 @@ class VideosContainer(BaseContainer):
         contentDetails.regionRestriction = region_restriction
         
         return contentDetails
+
+    def _extract_statistics(self, statistics_item: dict) -> VideoItemStatistics:
+        """
+        extract statistics from the raw item and convert to int if possible
+        """
+        statistics = VideoItemStatistics()
+        statistics.viewCount = int(statistics_item.get("viewCount", 0))
+        statistics.likeCount = int(statistics_item.get("likeCount", 0))
+        statistics.favoriteCount = int(statistics_item.get("favoriteCount", 0))
+        statistics.commentCount = int(statistics_item.get("commentCount", 0))
+        return statistics

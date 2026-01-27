@@ -1,5 +1,6 @@
 import time
 import json
+import math
 from typing import TypeAlias, Literal, Optional, List, Type
 from dataclasses import dataclass, asdict, field
 
@@ -109,6 +110,25 @@ class PipelineExecutionRecorder:
         stage_result.max_page = block.pipe_settings.max_page if block.pipe_settings else None
 
         stage_result.n_output = n_output
+
+        # Recalculate quota based on actual output for IterableEstimator-based operations
+        # This ensures accurate quota reporting when actual output differs from estimated
+        if foreman.name in ["search", "playlists", "playlist_items", "comments"]:
+            settings = block.pipe_settings
+            if settings is None or settings.retrieval == "all":
+                items_per_page = stage_result.item_multiplier
+                if items_per_page > 0:
+                    # Each input triggers at least 1 API call; additional calls for pagination
+                    # Approximation: assume output is evenly distributed across inputs
+                    if n_input > 0 and n_output > 0:
+                        avg_output_per_input = n_output / n_input
+                        calls_per_input = math.ceil(avg_output_per_input / items_per_page)
+                        total_api_calls = n_input * calls_per_input
+                    else:
+                        # At minimum, n_input calls were made (one per input)
+                        total_api_calls = n_input
+                    stage_result.quota_usage = total_api_calls * stage_result.foreman.cost_per_call
+
 
         if verbose:
             logging.info(f"{'Input count  :':<25} {n_input}")

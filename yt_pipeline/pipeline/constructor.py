@@ -5,6 +5,7 @@ import re
 from typing import get_args
 import logging
 from copy import deepcopy
+from dataclasses import replace
 
 from yt_pipeline.retriever.search.params import OrderProps
 
@@ -15,6 +16,7 @@ from yt_pipeline.foreman.base import UniqueForeman, IterableForeman, BaseForeman
 from yt_pipeline.retriever.search import SearchTypeCheckboxProps, SearchParamProps
 from yt_pipeline.retriever.captions import CaptionsParams
 from yt_pipeline.retriever import RetrieverSettings
+from yt_pipeline.retriever.base import PipeSettings
 
 
 class PipelineStacksConstructor:
@@ -209,19 +211,34 @@ class PipelineBlockConstructor:
         
         if modifier:
             args = modifier[0].split(" ")
+            max_page_specified = False
+            n_specified = False
             for arg in args:
                 if "max_workers" in arg:
                     max_workers = re.findall(r'\((.*?)\)', arg)
                     if not max_workers:
                         raise ValueError('max_workers number should be specified with max_workers(n)')
                     block.max_workers = int(max_workers[0])
-                elif "max_page" in arg and notation in ["search", "playlists", "playlist_items", "comments"]:
-                    max_page = re.findall(r'\((.*?)\)', arg)
-                    if not max_page:
-                        raise ValueError('max_page number should be specified with max_page(n)')
-                    block.pipe_settings = PipeSettings(max_page=int(max_page[0]))
+                elif notation in ["search", "playlists", "playlist_items", "comments"]:
+                    # do not allow max_page and n to be specified together
+                    if "max_page" in arg:
+                        if n_specified:
+                            raise ValueError("max_page and n cannot be specified together")
+                        max_page = re.findall(r'\((.*?)\)', arg)
+                        if not max_page:
+                            raise ValueError('max_page number should be specified with max_page(n)')
+                        block.pipe_settings = PipeSettings(max_page=int(max_page[0]))
+                        max_page_specified = True
+                    elif arg.startswith("n("):
+                        if max_page_specified:
+                            raise ValueError("max_page and n cannot be specified together")
+                        n = re.findall(r'\((.*?)\)', arg)
+                        if not n:
+                            raise ValueError('n number should be specified with n(n)')
+                        block.pipe_settings = PipeSettings(n=int(n[0]), retrieval="custom")
+                        n_specified = True
                 elif arg == "save_output":
-                        block.save_output = True
+                    block.save_output = True
                 else:
                     raise ValueError(f"invalid modifier argument '{arg}' passed")
                 
