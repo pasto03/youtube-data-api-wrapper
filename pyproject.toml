@@ -16,7 +16,8 @@ dependencies = [
     "tqdm",
     "google-api-python-client",
     "isodate",
-    "anytree"
+    "anytree",
+    "cryptography==41.0.7"
 ]
 
 [project.urls]
