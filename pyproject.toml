@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "yt_pipeline"
-version = "1.3.4"
+version = "1.3.5"
 description = "A composable Python framework for building structured and extensible data pipelines using the YouTube Data API, with features such as progress display and flexible pipeline composition."
 authors = [
     { name = "Ben Law", email = "chumaolaw@gmail.com" }
