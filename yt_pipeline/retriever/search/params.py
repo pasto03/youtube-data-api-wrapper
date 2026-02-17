@@ -29,6 +29,7 @@ class SearchParamProps:
 
     order: Optional[OrderProps] = "relevance"
     publishedAfter: Optional[str] = None    # RFC 3339 formatted date-time value
+    publishedBefore: Optional[str] = None    # RFC 3339 formatted date-time value
 
     def to_dict(self):
         return {k:v for k, v in asdict(self).items() if v is not None}
@@ -50,6 +51,7 @@ class SearchParams:
 
     order: OrderProps = "relevance" 
     publishedAfter: Optional[str] = None
+    publishedBefore: Optional[str] = None
 
     def to_dict(self):
         return {k:v for k, v in asdict(self).items() if v is not None}
